@@ -1,12 +1,8 @@
 //! This exampel call on an example pallet TemplateModule::do_something function
 #![deny(warnings)]
 use mycelium::{
-    types::extrinsic_params::{
-        PlainTip,
-        PlainTipExtrinsicParams,
-    },
-    Api,
-    Metadata,
+    types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
+    Api, Metadata,
 };
 use sp_keyring::AccountKeyring;
 
@@ -34,5 +30,10 @@ async fn main() -> Result<(), mycelium::Error> {
     println!("encoded: {}", encoded);
     let result = api.author_submit_extrinsic(&encoded).await?;
     println!("result: {:?}", result);
+
+    let something: Result<Option<u32>, _> =
+        api.fetch_storage_value("TemplateModule", "Something").await;
+    println!("something: {:?}", something);
+
     Ok(())
 }

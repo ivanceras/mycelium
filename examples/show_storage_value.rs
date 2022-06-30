@@ -1,9 +1,9 @@
 //! This example get the values from the storage items from their respective pallets
 #![deny(warnings)]
-use mycelium::Api;
 use mycelium::sp_core::crypto::AccountId32;
-use sp_keyring::AccountKeyring;
+use mycelium::Api;
 use pallet_balances::AccountData;
+use sp_keyring::AccountKeyring;
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
@@ -17,7 +17,9 @@ async fn main() -> Result<(), mycelium::Error> {
     println!("total issuance: {:?}", total_issuance);
 
     let account_id: AccountId32 = AccountKeyring::Bob.to_account_id();
-    let account_balance: Result<Option<AccountData<u128>>,_> = api.fetch_storage_map("Balances", "Account", account_id).await;
+    let account_balance: Result<Option<AccountData<u128>>, _> = api
+        .fetch_storage_map("Balances", "Account", account_id)
+        .await;
     println!("account_balance: {:?}", account_balance);
     Ok(())
 }

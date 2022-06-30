@@ -20,29 +20,16 @@
 //! This file is mostly subxt.
 
 use crate::types::storage::GetStorage;
-use codec::{
-    Encode,
-    Error as CodecError,
-};
+use codec::{Encode, Error as CodecError};
+use frame_metadata::v14::StorageEntryType;
 use frame_metadata::{
-    PalletConstantMetadata,
-    RuntimeMetadata,
-    RuntimeMetadataLastVersion,
-    RuntimeMetadataPrefixed,
-    StorageEntryMetadata,
-    META_RESERVED,
+    PalletConstantMetadata, RuntimeMetadata, RuntimeMetadataLastVersion, RuntimeMetadataPrefixed,
+    StorageEntryMetadata, META_RESERVED,
 };
-use scale_info::{
-    form::PortableForm,
-    Type,
-    Variant,
-};
+use scale_info::{form::PortableForm, Type, Variant};
 use serde::Serialize;
 use sp_core::storage::StorageKey;
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-};
+use std::{collections::HashMap, convert::TryFrom};
 
 /// Wraps an already encoded byte vector, prevents being encoded as a raw byte vector as part of
 /// the transaction payload
@@ -166,6 +153,41 @@ impl Metadata {
     pub fn get_runtime_metadata(&self) -> &RuntimeMetadataLastVersion {
         &self.metadata
     }
+
+    pub fn storage_value_type(
+        &self,
+        pallet_name: &str,
+        storage_name: &str,
+    ) -> Result<Option<&Type<PortableForm>>, MetadataError> {
+        let pallet = self.pallet(pallet_name)?;
+        let storage_metadata = pallet.storage(storage_name)?;
+        let ty_id = match storage_metadata.ty {
+            StorageEntryType::Plain(plain) => Some(plain.id()),
+            _ => None,
+        };
+        let portable_form = ty_id.map(|ty_id| self.get_resolve_type(ty_id)).flatten();
+        Ok(portable_form)
+    }
+
+    pub fn storage_map_type(
+        &self,
+        pallet_name: &str,
+        storage_name: &str,
+    ) -> Result<Option<(&Type<PortableForm>, &Type<PortableForm>)>, MetadataError> {
+        let pallet = self.pallet(pallet_name)?;
+        let storage_metadata = pallet.storage(storage_name)?;
+        match storage_metadata.ty {
+            StorageEntryType::Map { key, value, .. } => {
+                let ty_key = self.get_resolve_type(key.id());
+                let ty_value = self.get_resolve_type(value.id());
+                match (ty_key, ty_value) {
+                    (Some(ty_key), Some(ty_value)) => Ok(Some((ty_key, ty_value))),
+                    _ => Ok(None),
+                }
+            }
+            _ => Ok(None),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -178,26 +200,20 @@ pub struct PalletMetadata {
 }
 
 impl PalletMetadata {
-    pub fn encode_call<C>(
-        &self,
-        call_name: &str,
-        args: C,
-    ) -> Result<Encoded, MetadataError>
+    pub fn encode_call<C>(&self, call_name: &str, args: C) -> Result<Encoded, MetadataError>
     where
         C: Encode,
     {
-        let fn_index = self.calls.get(call_name).ok_or_else(|| {
-            MetadataError::CallNotFound(call_name.to_string())
-        })?;
+        let fn_index = self
+            .calls
+            .get(call_name)
+            .ok_or_else(|| MetadataError::CallNotFound(call_name.to_string()))?;
         let mut bytes = vec![self.index, *fn_index];
         bytes.extend(args.encode());
         Ok(Encoded(bytes))
     }
 
-    pub fn storage(
-        &self,
-        key: &str,
-    ) -> Result<&StorageEntryMetadata<PortableForm>, MetadataError> {
+    pub fn storage(&self, key: &str) -> Result<&StorageEntryMetadata<PortableForm>, MetadataError> {
         self.storage
             .get(key)
             .ok_or_else(|| MetadataError::StorageNotFound(key.to_string()))
@@ -277,9 +293,7 @@ pub enum InvalidMetadataError {
 impl TryFrom<RuntimeMetadataPrefixed> for Metadata {
     type Error = InvalidMetadataError;
 
-    fn try_from(
-        metadata: RuntimeMetadataPrefixed,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(metadata: RuntimeMetadataPrefixed) -> Result<Self, Self::Error> {
         if metadata.0 != META_RESERVED {
             return Err(InvalidMetadataError::InvalidPrefix);
         }
@@ -304,28 +318,28 @@ impl TryFrom<RuntimeMetadataPrefixed> for Metadata {
             .pallets
             .iter()
             .map(|pallet| {
-                let calls = pallet.calls.as_ref().map_or(
-                    Ok(HashMap::new()),
-                    |call| {
-                        let type_def_variant =
-                            get_type_def_variant(call.ty.id())?;
-                        let calls = type_def_variant
-                            .variants()
-                            .iter()
-                            .map(|v| (v.name().clone(), v.index()))
-                            .collect();
-                        Ok(calls)
-                    },
-                )?;
+                let calls = pallet.calls.as_ref().map_or(Ok(HashMap::new()), |call| {
+                    let type_def_variant = get_type_def_variant(call.ty.id())?;
+                    let calls = type_def_variant
+                        .variants()
+                        .iter()
+                        .map(|v| (v.name().clone(), v.index()))
+                        .collect();
+                    Ok(calls)
+                })?;
 
-                let storage =
-                    pallet.storage.as_ref().map_or(HashMap::new(), |storage| {
-                        storage
-                            .entries
-                            .iter()
-                            .map(|entry| (entry.name.clone(), entry.clone()))
-                            .collect()
-                    });
+                let storage = pallet.storage.as_ref().map_or(HashMap::new(), |storage| {
+                    storage
+                        .entries
+                        .iter()
+                        .inspect(|entry| {
+                            if entry.name == "Something" {
+                                println!("entry: {:#?}", entry);
+                            }
+                        })
+                        .map(|entry| (entry.name.clone(), entry.clone()))
+                        .collect()
+                });
 
                 let constants = pallet
                     .constants

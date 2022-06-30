@@ -1,12 +1,5 @@
-use crate::{
-    api::Api,
-    utils::FromHexStr,
-    Error,
-};
-use codec::{
-    Decode,
-    Encode,
-};
+use crate::{api::Api, utils::FromHexStr, Error};
+use codec::{Decode, Encode};
 use sp_core::storage::StorageKey;
 
 impl Api {
@@ -19,8 +12,7 @@ impl Api {
     where
         V: Decode,
     {
-        let storage_key =
-            self.metadata.storage_value_key(module, storage_name)?;
+        let storage_key = self.metadata.storage_value_key(module, storage_name)?;
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
@@ -34,8 +26,7 @@ impl Api {
         K: Encode,
         V: Decode,
     {
-        let storage_key =
-            self.metadata.storage_map_key(module, storage_name, key)?;
+        let storage_key = self.metadata.storage_map_key(module, storage_name, key)?;
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
@@ -51,12 +42,9 @@ impl Api {
         Q: Encode,
         V: Decode,
     {
-        let storage_key = self.metadata.storage_double_map_key(
-            module,
-            storage_name,
-            first,
-            second,
-        )?;
+        let storage_key =
+            self.metadata
+                .storage_double_map_key(module, storage_name, first, second)?;
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
@@ -94,7 +82,8 @@ impl Api {
     }
 }
 
-#[cfg(test)]
+//#[cfg(test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 mod tests {
     use super::*;
 
