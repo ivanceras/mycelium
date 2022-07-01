@@ -32,11 +32,23 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	/// The post (post_id, (content, author, parent_post))
+	/// The post (post_id, (content, author))
 	#[pallet::storage]
 	#[pallet::getter(fn post)]
 	pub type Post<T: Config> =
-		StorageMap<_, Twox64Concat, u32, (BoundedVec<u8, T::MaxLength>, T::AccountId, Option<u32>)>;
+		StorageMap<_, Twox64Concat, u32, (BoundedVec<u8, T::MaxLength>, T::AccountId)>;
+
+	/// The comment (post_id, comment_id, (content, author, parent_comment))
+	#[pallet::storage]
+	#[pallet::getter(fn comment)]
+	pub type Comment<T: Config> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		u32,
+		Twox64Concat,
+		u32,
+		(BoundedVec<u8, T::MaxLength>, T::AccountId, Option<u32>),
+	>;
 
 	/// The total number of post
 	#[pallet::storage]
@@ -82,7 +94,7 @@ pub mod pallet {
 			let post_id = TotalPost::<T>::get();
 			println!("post_id: {} -> {:?}", post_id, post);
 
-			Post::<T>::insert(post_id, (post.clone(), who.clone(), None::<u32>));
+			Post::<T>::insert(post_id, (post.clone(), who.clone()));
 			// Emit a PostSubmitted event
 			Self::deposit_event(Event::PostSubmitted(post_id, post, who));
 
@@ -95,9 +107,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub fn get_post(
-			post_id: u32,
-		) -> Option<(BoundedVec<u8, T::MaxLength>, T::AccountId, Option<u32>)> {
+		pub fn get_post(post_id: u32) -> Option<(BoundedVec<u8, T::MaxLength>, T::AccountId)> {
 			println!("getting post_id: {}", post_id);
 			Post::<T>::get(post_id)
 		}
