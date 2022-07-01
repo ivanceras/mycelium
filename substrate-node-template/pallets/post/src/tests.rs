@@ -8,8 +8,8 @@ fn it_works_for_default_value() {
 	new_test_ext().execute_with(|| {
 		// Dispatch a signed extrinsic.
 		let content = BoundedVec::try_from(b"hello".to_vec()).unwrap();
-		assert_ok!(TemplateModule::post_content(Origin::signed(1), content));
+		assert_ok!(PostModule::post_content(Origin::signed(1), content));
 		// Read pallet storage and assert an expected result.
-		assert_eq!(TemplateModule::total(), 1);
+		assert_eq!(PostModule::total(), 1);
 	});
 }
