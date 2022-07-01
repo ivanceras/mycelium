@@ -1,4 +1,4 @@
-use crate as pallet_post;
+use crate as pallet_forum;
 use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
 use sp_core::H256;
@@ -18,7 +18,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		PostModule: pallet_post::{Pallet, Call, Storage, Event<T>},
+		ForumModule: pallet_forum::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -49,7 +49,7 @@ impl system::Config for Test {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl pallet_post::Config for Test {
+impl pallet_forum::Config for Test {
 	type Event = Event;
 	type MaxLength = frame_support::traits::ConstU32<140>;
 }

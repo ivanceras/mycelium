@@ -1,5 +1,5 @@
 [package]
-name = "pallet-post"
+name = "pallet-forum"
 version = "4.0.0-dev"
 description = "This pallet demonstrate a simple application built on top of a substrate node"
 authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]

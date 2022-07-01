@@ -5,6 +5,8 @@
 /// <https://docs.substrate.io/v3/runtime/frame>
 pub use pallet::*;
 
+mod types;
+
 #[cfg(test)]
 mod mock;
 
@@ -16,6 +18,7 @@ mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::types::PostContent;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
@@ -28,7 +31,7 @@ pub mod pallet {
 
 		/// The maximum length a name may be.
 		#[pallet::constant]
-		type MaxLength: Get<u32>;
+		type MaxLength: Get<u32> + Encode + PartialEq;
 	}
 
 	#[pallet::pallet]
@@ -40,6 +43,10 @@ pub mod pallet {
 	#[pallet::getter(fn post)]
 	pub type Post<T: Config> =
 		StorageMap<_, Twox64Concat, u32, (BoundedVec<u8, T::MaxLength>, T::AccountId)>;
+
+	#[pallet::storage]
+	pub type Post1<T: Config> =
+		StorageMap<_, Twox64Concat, u32, PostContent<T::AccountId, T::MaxLength>>;
 
 	/// The total number of post
 	#[pallet::storage]
@@ -83,6 +90,9 @@ pub mod pallet {
 
 			// use the total number of post as post_id
 			let post_id = TotalPost::<T>::get();
+			println!("post_id: {}", post_id);
+
+			Post::<T>::insert(post_id, (post.clone(), who.clone()));
 			// Emit a PostSubmitted event
 			Self::deposit_event(Event::PostSubmitted(post_id, post, who));
 
@@ -91,6 +101,12 @@ pub mod pallet {
 				*i = i.saturating_add(1);
 			});
 			Ok(())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn get_post(post_id: u32) -> Option<(BoundedVec<u8, T::MaxLength>, T::AccountId)> {
+			Post::<T>::get(post_id)
 		}
 	}
 }
