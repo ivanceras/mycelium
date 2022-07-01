@@ -50,19 +50,21 @@ pub mod pallet {
 		(BoundedVec<u8, T::MaxLength>, T::AccountId, Option<u32>),
 	>;
 
-	/// The total number of post
+	/// Keeps track of the item added into the system
+	/// increments as more post or item is added
 	#[pallet::storage]
-	#[pallet::getter(fn total)]
-	pub(super) type TotalPost<T: Config> = StorageValue<_, u32, ValueQuery>;
+	#[pallet::getter(fn item_counter)]
+	pub(super) type ItemCounter<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://docs.substrate.io/v3/runtime/events-and-errors
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		PostSubmitted(u32, BoundedVec<u8, T::MaxLength>, T::AccountId),
+		/// A post is submitted with post_id, and the author
+		PostSubmitted(u32, T::AccountId),
+		/// A comment is submmited with comment_id and the author
+		CommentSubmitted(u32, T::AccountId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -79,34 +81,56 @@ pub mod pallet {
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
+		/// add a post content to the storage, emit and event
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn post_content(
 			origin: OriginFor<T>,
-			post: BoundedVec<u8, T::MaxLength>,
+			content: BoundedVec<u8, T::MaxLength>,
 		) -> DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
 			// This function will return an error if the extrinsic is not signed.
 			let who = ensure_signed(origin)?;
 
-			// use the total number of post as post_id
-			let post_id = TotalPost::<T>::get();
-			println!("post_id: {} -> {:?}", post_id, post);
+			// use the total number of items as post_id
+			let post_id = ItemCounter::<T>::get();
 
-			Post::<T>::insert(post_id, (post.clone(), who.clone()));
+			Post::<T>::insert(post_id, (content, who.clone()));
+			// increment the item counter
+			Self::increment_item_counter();
 			// Emit a PostSubmitted event
-			Self::deposit_event(Event::PostSubmitted(post_id, post, who));
+			Self::deposit_event(Event::PostSubmitted(post_id, who));
 
-			// increment the total number of post
-			TotalPost::<T>::mutate(|i| {
-				*i = i.saturating_add(1);
-			});
+			Ok(())
+		}
+
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		pub fn comment_on(
+			origin: OriginFor<T>,
+			post_id: u32,
+			parent_comment: Option<u32>,
+			content: BoundedVec<u8, T::MaxLength>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let comment_id = ItemCounter::<T>::get();
+			Comment::<T>::insert(
+				post_id,
+				comment_id,
+				(content.clone(), who.clone(), parent_comment),
+			);
+			Self::increment_item_counter();
+			Self::deposit_event(Event::CommentSubmitted(post_id, who));
 			Ok(())
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// increment th ItemCounter storage value
+		fn increment_item_counter() {
+			ItemCounter::<T>::mutate(|i| {
+				*i = i.saturating_add(1);
+			});
+		}
+
 		pub fn get_post(post_id: u32) -> Option<(BoundedVec<u8, T::MaxLength>, T::AccountId)> {
 			println!("getting post_id: {}", post_id);
 			Post::<T>::get(post_id)
