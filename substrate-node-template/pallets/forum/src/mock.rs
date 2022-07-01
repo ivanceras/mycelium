@@ -51,7 +51,7 @@ impl system::Config for Test {
 
 impl pallet_forum::Config for Test {
 	type Event = Event;
-	type MaxLength = frame_support::traits::ConstU32<140>;
+	type MaxLength = frame_support::traits::ConstU32<280>;
 }
 
 // Build genesis storage according to the mock runtime.
