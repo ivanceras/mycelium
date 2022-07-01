@@ -132,7 +132,7 @@ pub mod pallet {
 		}
 
 		pub fn get_post(post_id: u32) -> Option<(BoundedVec<u8, T::MaxLength>, T::AccountId)> {
-			println!("getting post_id: {}", post_id);
+			log::info!("getting post_id: {}", post_id);
 			Post::<T>::get(post_id)
 		}
 	}
