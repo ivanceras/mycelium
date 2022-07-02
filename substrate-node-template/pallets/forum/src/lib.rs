@@ -17,15 +17,21 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
 
+	pub type PostContent<T> = (u32, BoundedVec<u8, <T as Config>::MaxContentLength>);
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		/// The maximum length a name may be.
+		/// The maximum length of the post content
 		#[pallet::constant]
-		type MaxLength: Get<u32>;
+		type MaxContentLength: Get<u32>;
+
+		/// The maximum allowed children comments
+		#[pallet::constant]
+		type MaxComments: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -36,7 +42,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn post)]
 	pub type Post<T: Config> =
-		StorageMap<_, Twox64Concat, u32, (BoundedVec<u8, T::MaxLength>, T::AccountId)>;
+		StorageMap<_, Twox64Concat, u32, (BoundedVec<u8, T::MaxContentLength>, T::AccountId)>;
 
 	/// The comment (post_id, comment_id, (content, author, parent_comment))
 	#[pallet::storage]
@@ -47,8 +53,12 @@ pub mod pallet {
 		u32,
 		Twox64Concat,
 		u32,
-		(BoundedVec<u8, T::MaxLength>, T::AccountId, Option<u32>),
+		(BoundedVec<u8, T::MaxContentLength>, T::AccountId, Option<u32>),
 	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn kids)]
+	pub type Kids<T: Config> = StorageMap<_, Twox64Concat, u32, BoundedVec<u32, T::MaxComments>>;
 
 	/// Keeps track of the item added into the system
 	/// increments as more post or item is added
@@ -85,7 +95,7 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn post_content(
 			origin: OriginFor<T>,
-			content: BoundedVec<u8, T::MaxLength>,
+			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
 			// This function will return an error if the extrinsic is not signed.
@@ -108,7 +118,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			post_id: u32,
 			parent_comment: Option<u32>,
-			content: BoundedVec<u8, T::MaxLength>,
+			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let comment_id = ItemCounter::<T>::get();
@@ -131,7 +141,9 @@ pub mod pallet {
 			});
 		}
 
-		pub fn get_post(post_id: u32) -> Option<(BoundedVec<u8, T::MaxLength>, T::AccountId)> {
+		pub fn get_post(
+			post_id: u32,
+		) -> Option<(BoundedVec<u8, T::MaxContentLength>, T::AccountId)> {
 			log::info!("getting post_id: {}", post_id);
 			Post::<T>::get(post_id)
 		}

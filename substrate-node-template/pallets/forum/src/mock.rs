@@ -1,4 +1,5 @@
 use crate as pallet_forum;
+use frame_support::traits::ConstU32;
 use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
 use sp_core::H256;
@@ -51,7 +52,8 @@ impl system::Config for Test {
 
 impl pallet_forum::Config for Test {
 	type Event = Event;
-	type MaxLength = frame_support::traits::ConstU32<280>;
+	type MaxContentLength = ConstU32<280>;
+	type MaxComments = ConstU32<1000>;
 }
 
 // Build genesis storage according to the mock runtime.
