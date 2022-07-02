@@ -17,8 +17,6 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
 
-	pub type PostContent<T> = (u32, BoundedVec<u8, <T as Config>::MaxContentLength>);
-
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -58,6 +56,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn kids)]
+	/// The heirarchy of comments (item_id, Vec<item_id>)
 	pub type Kids<T: Config> = StorageMap<_, Twox64Concat, u32, BoundedVec<u32, T::MaxComments>>;
 
 	/// Keeps track of the item added into the system
@@ -73,8 +72,8 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A post is submitted with post_id, and the author
 		PostSubmitted(u32, T::AccountId),
-		/// A comment is submmited with comment_id and the author
-		CommentSubmitted(u32, T::AccountId),
+		/// A comment is submmited with (post_id, comment_id and the author)
+		CommentSubmitted(u32, u32, T::AccountId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -84,6 +83,7 @@ pub mod pallet {
 		NoneValue,
 		/// Errors should have helpful documentation associated with them.
 		StorageOverflow,
+		ContentTooLong,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -118,17 +118,11 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			post_id: u32,
 			parent_comment: Option<u32>,
-			content: BoundedVec<u8, T::MaxContentLength>,
+			content: String,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let comment_id = ItemCounter::<T>::get();
-			Comment::<T>::insert(
-				post_id,
-				comment_id,
-				(content.clone(), who.clone(), parent_comment),
-			);
-			Self::increment_item_counter();
-			Self::deposit_event(Event::CommentSubmitted(post_id, who));
+			let comment_id = Self::add_comment_to(who.clone(), post_id, parent_comment, content);
+			Self::deposit_event(Event::CommentSubmitted(post_id, comment_id, who));
 			Ok(())
 		}
 	}
@@ -139,6 +133,35 @@ pub mod pallet {
 			ItemCounter::<T>::mutate(|i| {
 				*i = i.saturating_add(1);
 			});
+		}
+
+		pub fn add_comment_to(
+			who: T::AccountId,
+			post_id: u32,
+			parent_comment: Option<u32>,
+			content: String,
+		) -> u32 {
+			let bounded_content = BoundedVec::try_from(content.into_bytes()).unwrap();
+			let comment_id = ItemCounter::<T>::get();
+			Comment::<T>::insert(
+				post_id,
+				comment_id,
+				(bounded_content.clone(), who.clone(), parent_comment),
+			);
+			Self::increment_item_counter();
+			let parent_item =
+				if let Some(parent_comment) = parent_comment { parent_comment } else { post_id };
+
+			if Kids::<T>::contains_key(parent_item) {
+				Kids::<T>::mutate(parent_item, |i| {
+					if let Some(i) = i {
+						i.try_push(comment_id).unwrap();
+					}
+				});
+			} else {
+				Kids::<T>::insert(parent_item, BoundedVec::try_from(vec![comment_id]).unwrap());
+			}
+			comment_id
 		}
 
 		pub fn get_post(
