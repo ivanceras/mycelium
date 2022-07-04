@@ -271,7 +271,8 @@ impl pallet_template::Config for Runtime {
 
 impl pallet_forum::Config for Runtime {
 	type Event = Event;
-	type MaxLength = ConstU32<280>;
+	type MaxContentLength = ConstU32<280>;
+	type MaxComments = ConstU32<1000>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

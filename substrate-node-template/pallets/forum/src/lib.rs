@@ -118,7 +118,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			post_id: u32,
 			parent_comment: Option<u32>,
-			content: String,
+			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let comment_id = Self::add_comment_to(who.clone(), post_id, parent_comment, content);
@@ -139,14 +139,13 @@ pub mod pallet {
 			who: T::AccountId,
 			post_id: u32,
 			parent_comment: Option<u32>,
-			content: String,
+			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> u32 {
-			let bounded_content = BoundedVec::try_from(content.into_bytes()).unwrap();
 			let comment_id = ItemCounter::<T>::get();
 			Comment::<T>::insert(
 				post_id,
 				comment_id,
-				(bounded_content.clone(), who.clone(), parent_comment),
+				(content.clone(), who.clone(), parent_comment),
 			);
 			Self::increment_item_counter();
 			let parent_item =

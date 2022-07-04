@@ -18,25 +18,20 @@ fn it_works_posting_content() {
 		assert_eq!(ForumModule::get_post(0), Some((content, 1)));
 
 		let comment = BoundedVec::try_from(b"I'm a comment".to_vec()).unwrap();
-		assert_ok!(ForumModule::comment_on(
-			Origin::signed(2),
-			0,
-			None,
-			"I'm a comment".to_string()
-		));
+		assert_ok!(ForumModule::comment_on(Origin::signed(2), 0, None, comment.clone()));
 
 		assert_ok!(ForumModule::comment_on(
 			Origin::signed(2),
 			0,
 			None,
-			"This is a second comment".to_string()
+			BoundedVec::try_from(b"This is a second comment".to_vec()).unwrap()
 		));
 
 		assert_ok!(ForumModule::comment_on(
 			Origin::signed(3),
 			1,
 			None,
-			"> I'm a comment \nThis".to_string()
+			BoundedVec::try_from(b"> I'm a comment \nThis".to_vec()).unwrap()
 		));
 
 		assert_eq!(ForumModule::comment(0, 1), Some((comment, 2, None)));
