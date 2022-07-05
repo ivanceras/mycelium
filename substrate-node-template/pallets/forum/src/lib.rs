@@ -141,6 +141,7 @@ pub mod pallet {
 			parent_comment: Option<u32>,
 			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> u32 {
+			log::warn!("adding comment to..");
 			let comment_id = ItemCounter::<T>::get();
 			Comment::<T>::insert(
 				post_id,
@@ -152,12 +153,14 @@ pub mod pallet {
 				if let Some(parent_comment) = parent_comment { parent_comment } else { post_id };
 
 			if Kids::<T>::contains_key(parent_item) {
+				log::info!("adding comment to {}", parent_item);
 				Kids::<T>::mutate(parent_item, |i| {
 					if let Some(i) = i {
 						i.try_push(comment_id).unwrap();
 					}
 				});
 			} else {
+				log::info!("inserting a new comment: {} for post: {}", comment_id, post_id);
 				Kids::<T>::insert(parent_item, BoundedVec::try_from(vec![comment_id]).unwrap());
 			}
 			comment_id

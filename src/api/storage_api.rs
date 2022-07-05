@@ -74,7 +74,6 @@ impl Api {
             Some(value) => {
                 let value_str = value.as_str().expect("must be a str");
                 let data = Vec::from_hex(value_str)?;
-                println!("data: {:?}", data);
                 Ok(Some(data))
             }
             None => Ok(None),

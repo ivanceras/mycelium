@@ -43,6 +43,7 @@ wasm-bindgen-test = "0.3.30"
 node-template-runtime = { path = "./substrate-node-template/runtime" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
 frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24"}
+pretty_env_logger = "0.4.0"
 
 [features]
 std = [
