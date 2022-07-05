@@ -4,30 +4,15 @@ use crate::{
     types::{
         account_info::AccountInfo,
         extrinsic_params::{
-            BaseExtrinsicParams,
-            BaseExtrinsicParamsBuilder,
-            ExtrinsicParams,
-            GenericExtra,
+            BaseExtrinsicParams, BaseExtrinsicParamsBuilder, ExtrinsicParams, GenericExtra,
             SignedPayload,
         },
-        extrinsics::{
-            GenericAddress,
-            UncheckedExtrinsicV4,
-        },
+        extrinsics::{GenericAddress, UncheckedExtrinsicV4},
     },
 };
 use codec::Encode;
-use sp_core::{
-    crypto::Pair,
-    storage::StorageKey,
-    H256,
-};
-use sp_runtime::{
-    traits::IdentifyAccount,
-    AccountId32,
-    MultiSignature,
-    MultiSigner,
-};
+use sp_core::{crypto::Pair, storage::StorageKey, H256};
+use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSignature, MultiSigner};
 use std::fmt;
 
 impl Api {
@@ -61,10 +46,7 @@ impl Api {
             .await
     }
 
-    pub fn unsigned_extrinsic<Call>(
-        &self,
-        call: Call,
-    ) -> UncheckedExtrinsicV4<Call>
+    pub fn unsigned_extrinsic<Call>(&self, call: Call) -> UncheckedExtrinsicV4<Call>
     where
         Call: Encode,
     {
@@ -126,5 +108,29 @@ impl Api {
                 ))
             }
         }
+    }
+
+    pub async fn execute_extrinsic<P, Params, Tip, Call>(
+        &self,
+        signer: Option<P>,
+        call: Call,
+        head_hash: Option<H256>,
+        extrinsic_params: Option<Params::OtherParams>,
+    ) -> Result<Option<serde_json::Value>, Error>
+    where
+        P: sp_core::crypto::Pair,
+        MultiSigner: From<P::Public>,
+        MultiSignature: From<P::Signature>,
+        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
+        u128: From<Tip>,
+        Tip: Encode + Default,
+        Call: Clone + fmt::Debug + Encode,
+    {
+        let xt = self
+            .compose_extrinsics::<P, Params, Tip, Call>(signer, call, head_hash, extrinsic_params)
+            .await?;
+
+        let encoded = xt.hex_encode();
+        self.author_submit_extrinsic(&encoded).await
     }
 }
