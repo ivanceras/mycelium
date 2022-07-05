@@ -1,7 +1,4 @@
-use codec::{
-    Decode,
-    Encode,
-};
+use codec::{Decode, Encode};
 /// The block number type used in this runtime.
 pub type BlockNumber = u64;
 /// The timestamp moment type used in this runtime.

@@ -1,12 +1,5 @@
-use codec::{
-    Compact,
-    Decode,
-    Encode,
-};
-use sp_core::{
-    blake2_256,
-    H256,
-};
+use codec::{Compact, Decode, Encode};
+use sp_core::{blake2_256, H256};
 use sp_runtime::generic::Era;
 use sp_std::prelude::*;
 
@@ -143,11 +136,7 @@ impl<Call> SignedPayload<Call>
 where
     Call: Encode,
 {
-    pub fn from_raw(
-        call: Call,
-        extra: GenericExtra,
-        additional_signed: AdditionalSigned,
-    ) -> Self {
+    pub fn from_raw(call: Call, extra: GenericExtra, additional_signed: AdditionalSigned) -> Self {
         Self((call, extra, additional_signed))
     }
 

@@ -1,21 +1,14 @@
 //! Calling function from a custom pallet
-#![allow(warnings)]
-use codec::Encode;
+#![deny(warnings)]
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
-use mycelium::types::extrinsic_params::BaseExtrinsicParamsBuilder;
-use mycelium::types::extrinsic_params::ExtrinsicParams;
 use mycelium::{
     types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
     Api,
 };
 use sp_core::sr25519::Pair;
-use sp_core::H256;
 use sp_keyring::AccountKeyring;
-use sp_runtime::MultiSignature;
-use sp_runtime::MultiSigner;
-use std::fmt;
 use std::{thread, time};
 
 #[tokio::main]

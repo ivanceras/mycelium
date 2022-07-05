@@ -1,19 +1,15 @@
-use crate::{
-    Error,
-    Metadata,
-};
+use crate::{Error, Metadata};
 pub use base_api::BaseApi;
-use codec::Decode;
 use delegate::delegate;
 use serde::de::DeserializeOwned;
 use sp_core::H256;
 use sp_runtime::traits::Header;
 use sp_version::RuntimeVersion;
 
+mod balance_api;
 mod base_api;
 mod extrinsic_api;
 mod storage_api;
-mod balance_api;
 
 /// A more complex Api which requires prefetching some fields such as Metadata, genesis_hash and
 /// runtime version

@@ -3,27 +3,15 @@
 use codec::Compact;
 use mycelium::{
     types::{
-        extrinsic_params::{
-            PlainTip,
-            PlainTipExtrinsicParams,
-            PlainTipExtrinsicParamsBuilder,
-        },
+        extrinsic_params::{PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder},
         extrinsics::GenericAddress,
     },
-    Api,
-    Metadata,
+    Api, Metadata,
 };
-use node_template_runtime::{
-    BalancesCall,
-    Call,
-    Header,
-};
+use node_template_runtime::{BalancesCall, Call, Header};
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
-use sp_runtime::{
-    generic::Era,
-    MultiAddress,
-};
+use sp_runtime::{generic::Era, MultiAddress};
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
@@ -54,13 +42,14 @@ async fn main() -> Result<(), mycelium::Error> {
         value: 69_420,
     });
 
-    let xt = api.compose_extrinsics::<
-        sp_core::sr25519::Pair,
-        PlainTipExtrinsicParams,
-        PlainTip,
-        Call,
-    >(Some(from), call, Some(head_hash), Some(tx_params))
-    .await?;
+    let xt = api
+        .compose_extrinsics::<sp_core::sr25519::Pair, PlainTipExtrinsicParams, PlainTip, Call>(
+            Some(from),
+            call,
+            Some(head_hash),
+            Some(tx_params),
+        )
+        .await?;
 
     let encoded = xt.hex_encode();
     println!("encoded: {}", encoded);

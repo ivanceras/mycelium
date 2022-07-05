@@ -7,19 +7,16 @@ use crate::{
         extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
         extrinsics::GenericAddress,
     },
-    Api, Metadata,
+    Api,
 };
 use codec::Compact;
-use codec::Encode;
 use sp_core::crypto::AccountId32;
 use sp_core::crypto::Pair;
-use sp_keyring::AccountKeyring;
+use sp_runtime::generic::Era;
 use sp_runtime::generic::Header;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::MultiSignature;
 use sp_runtime::MultiSigner;
-use sp_runtime::{generic::Era, MultiAddress};
-use std::fmt;
 
 impl Api {
     pub async fn balance_transfer<P>(
