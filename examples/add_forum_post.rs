@@ -1,3 +1,4 @@
+//! Calling function from a custom pallet
 #![allow(warnings)]
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
@@ -15,18 +16,15 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let api = Api::new("http://localhost:9933").await?;
 
-    let balance_pallet = api.metadata().pallet("ForumModule")?;
-    let balance_transfer_call_index = balance_pallet
+    let pallet = api.metadata().pallet("ForumModule")?;
+    let call_index = pallet
         .calls
         .get("post_content")
         .expect("unable to find transfer function");
 
     let bounded_content = BoundedVec::try_from(b"Hello world post!".to_vec()).unwrap();
 
-    let balance_call = (
-        [balance_pallet.index, *balance_transfer_call_index],
-        bounded_content,
-    );
+    let balance_call = ([pallet.index, *call_index], bounded_content);
     let xt = api.compose_extrinsics::<Pair, PlainTipExtrinsicParams, PlainTip,
             ([u8; 2], BoundedVec<u8, ConstU32<280>>),
             >(Some(from), balance_call, None, None).await?;
