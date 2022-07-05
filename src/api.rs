@@ -36,7 +36,7 @@ impl Api {
             pub async fn author_submit_extrinsic(
                 &self,
                 hex_extrinsic: &str,
-            ) -> Result<Option<serde_json::Value>, Error>;
+            ) -> Result<Option<H256>, Error>;
 
         }
     }

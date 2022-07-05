@@ -116,7 +116,7 @@ impl Api {
         call: Call,
         head_hash: Option<H256>,
         extrinsic_params: Option<Params::OtherParams>,
-    ) -> Result<Option<serde_json::Value>, Error>
+    ) -> Result<Option<H256>, Error>
     where
         P: sp_core::crypto::Pair,
         MultiSigner: From<P::Public>,

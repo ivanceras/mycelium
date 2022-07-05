@@ -12,6 +12,7 @@ use crate::{
 use codec::Compact;
 use sp_core::crypto::AccountId32;
 use sp_core::crypto::Pair;
+use sp_core::H256;
 use sp_runtime::generic::Era;
 use sp_runtime::generic::Header;
 use sp_runtime::traits::BlakeTwo256;
@@ -25,7 +26,7 @@ impl Api {
         to: AccountId32,
         amount: u128,
         tip: Option<u128>,
-    ) -> Result<Option<serde_json::Value>, Error>
+    ) -> Result<Option<H256>, Error>
     where
         P: Pair,
         MultiSigner: From<P::Public>,
