@@ -1,14 +1,21 @@
 //! Calling function from a custom pallet
 #![allow(warnings)]
+use codec::Encode;
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
+use mycelium::types::extrinsic_params::BaseExtrinsicParamsBuilder;
+use mycelium::types::extrinsic_params::ExtrinsicParams;
 use mycelium::{
     types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
     Api,
 };
 use sp_core::sr25519::Pair;
+use sp_core::H256;
 use sp_keyring::AccountKeyring;
+use sp_runtime::MultiSignature;
+use sp_runtime::MultiSigner;
+use std::fmt;
 use std::{thread, time};
 
 #[tokio::main]
@@ -26,11 +33,9 @@ async fn main() -> Result<(), mycelium::Error> {
     let bounded_content = BoundedVec::try_from(b"Hello world post!".to_vec()).unwrap();
 
     let call = ([pallet.index, *call_index], bounded_content);
-    let xt = api.compose_extrinsics::<Pair, PlainTipExtrinsicParams, PlainTip,
+    let result = api.execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip,
             ([u8; 2], BoundedVec<u8, ConstU32<280>>),
             >(Some(from.clone()), call, None, None).await?;
-    let encoded = xt.hex_encode();
-    let result = api.author_submit_extrinsic(&encoded).await;
     println!("result: {:?}", result);
 
     thread::sleep(time::Duration::from_millis(5_000));
@@ -95,8 +100,8 @@ async fn add_comment_to(
     let call_index = pallet.calls.get("comment_on").unwrap();
     let bounded_comment = BoundedVec::try_from(comment.as_bytes().to_vec()).unwrap();
     let call = ([pallet.index, *call_index], post_id, None, bounded_comment);
-    let xt = api
-        .compose_extrinsics::<Pair, PlainTipExtrinsicParams, PlainTip, ([u8;2], u32, Option<u32>, BoundedVec<u8, ConstU32<280>>)>(
+    let result = api
+        .execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip, ([u8;2], u32, Option<u32>, BoundedVec<u8, ConstU32<280>>)>(
             Some(author),
             call,
             None,
@@ -104,8 +109,6 @@ async fn add_comment_to(
         )
         .await?;
 
-    let encoded = xt.hex_encode();
-    let result = api.author_submit_extrinsic(&encoded).await;
     println!("comment result: {:?}", result);
     Ok(())
 }
