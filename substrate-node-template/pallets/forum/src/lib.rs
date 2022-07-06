@@ -41,13 +41,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn post)]
-	pub type Posts<T: Config> = StorageMap<_, Twox64Concat, u32, PostContent<T>>;
+	pub type AllPosts<T: Config> = StorageMap<_, Twox64Concat, u32, Post<T>>;
 
 	/// The comment (post_id, comment_id, (content, author, parent_comment))
 	#[pallet::storage]
 	#[pallet::getter(fn comment)]
-	pub type Comments<T: Config> =
-		StorageDoubleMap<_, Twox64Concat, u32, Twox64Concat, u32, CommentContent<T>>;
+	pub type AllComments<T: Config> =
+		StorageDoubleMap<_, Twox64Concat, u32, Twox64Concat, u32, Comment<T>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn kids)]
@@ -99,7 +99,7 @@ pub mod pallet {
 			// use the total number of items as post_id
 			let post_id = ItemCounter::<T>::get();
 
-			Posts::<T>::insert(post_id, PostContent::new(post_id, content, who.clone()));
+			AllPosts::<T>::insert(post_id, Post::new(post_id, content, who.clone()));
 			// increment the item counter
 			Self::increment_item_counter();
 			// Emit a PostSubmitted event
@@ -138,10 +138,10 @@ pub mod pallet {
 		) -> u32 {
 			log::warn!("adding comment to..");
 			let comment_id = ItemCounter::<T>::get();
-			Comments::<T>::insert(
+			AllComments::<T>::insert(
 				post_id,
 				comment_id,
-				CommentContent::new(comment_id, content.clone(), who.clone(), parent_comment),
+				Comment::new(comment_id, content.clone(), who.clone(), parent_comment),
 			);
 			Self::increment_item_counter();
 			let parent_item =
@@ -161,9 +161,9 @@ pub mod pallet {
 			comment_id
 		}
 
-		pub fn get_post(post_id: u32) -> Option<PostContent<T>> {
+		pub fn get_post(post_id: u32) -> Option<Post<T>> {
 			log::info!("getting post_id: {}", post_id);
-			Posts::<T>::get(post_id)
+			AllPosts::<T>::get(post_id)
 		}
 	}
 }
