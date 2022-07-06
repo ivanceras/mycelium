@@ -46,8 +46,7 @@ pub mod pallet {
 	/// The comment (post_id, comment_id, (content, author, parent_comment))
 	#[pallet::storage]
 	#[pallet::getter(fn comment)]
-	pub type AllComments<T: Config> =
-		StorageDoubleMap<_, Twox64Concat, u32, Twox64Concat, u32, Comment<T>>;
+	pub type AllComments<T: Config> = StorageMap<_, Twox64Concat, u32, Comment<T>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn kids)]
@@ -138,7 +137,6 @@ pub mod pallet {
 			log::warn!("adding comment to..");
 			let comment_id = ItemCounter::<T>::get();
 			AllComments::<T>::insert(
-				post_id,
 				comment_id,
 				Comment::new(comment_id, content.clone(), who.clone(), parent_comment),
 			);

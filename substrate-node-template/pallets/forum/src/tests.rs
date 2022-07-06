@@ -37,7 +37,7 @@ fn it_works_posting_content() {
 			BoundedVec::try_from(b"> I'm a comment \nThis".to_vec()).unwrap()
 		));
 
-		assert_eq!(ForumModule::comment(0, 1), Some(Comment::new(1, comment, 2, None)));
+		assert_eq!(ForumModule::comment(1), Some(Comment::new(1, comment, 2, None)));
 		assert_eq!(ForumModule::kids(0), Some(BoundedVec::try_from(vec![1, 2]).unwrap()));
 		assert_eq!(ForumModule::kids(1), Some(BoundedVec::try_from(vec![3]).unwrap()));
 		assert_eq!(ForumModule::kids(2), None);

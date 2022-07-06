@@ -1,5 +1,6 @@
 //! Calling function from a custom pallet
 #![allow(warnings)]
+use async_recursion::async_recursion;
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
@@ -8,10 +9,13 @@ use mycelium::{
     Api,
 };
 use node_template_runtime::Runtime;
+use pallet_forum::Comment;
 use pallet_forum::Post;
 use sp_core::sr25519::Pair;
 use sp_keyring::AccountKeyring;
 use std::{thread, time};
+
+type MaxComments = <Runtime as pallet_forum::Config>::MaxComments;
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
@@ -42,10 +46,10 @@ async fn main() -> Result<(), mycelium::Error> {
     println!("current item: {:?}", current_item);
     let current_item = current_item.unwrap();
 
-    let prev_item = current_item.saturating_sub(1);
+    let last_post_id = current_item.saturating_sub(1);
 
     let inserted_post: Option<Post<Runtime>> = api
-        .fetch_storage_map("ForumModule", "AllPosts", prev_item)
+        .fetch_storage_map("ForumModule", "AllPosts", last_post_id)
         .await?;
 
     println!("inserted-post: {:#?}", inserted_post);
@@ -54,33 +58,38 @@ async fn main() -> Result<(), mycelium::Error> {
         println!("posted content: {:?}", posted_content);
     }
 
-    thread::sleep(time::Duration::from_millis(5_000));
+    thread::sleep(time::Duration::from_millis(10_000));
 
     add_comment_to(
         &api,
-        current_item,
+        last_post_id,
         "This is a comment to Hello world!",
         from.clone(),
     )
     .await?;
 
-    thread::sleep(time::Duration::from_millis(5_000));
+    thread::sleep(time::Duration::from_millis(10_000));
 
     add_comment_to(
         &api,
-        current_item,
+        last_post_id,
         "This is a 2nd comment to the Hello world!",
         from,
     )
     .await?;
 
-    thread::sleep(time::Duration::from_millis(5_000));
+    thread::sleep(time::Duration::from_millis(10_000));
 
     let post_comments: Option<BoundedVec<u32, ConstU32<1000>>> = api
-        .fetch_storage_map("ForumModule", "Kids", current_item)
+        .fetch_storage_map("ForumModule", "Kids", last_post_id)
         .await?;
 
     dbg!(post_comments);
+
+    thread::sleep(time::Duration::from_millis(5_000));
+
+    let post_details = get_post_details(&api, last_post_id).await?;
+    dbg!(post_details);
 
     Ok(())
 }
@@ -106,4 +115,83 @@ async fn add_comment_to(
 
     println!("comment result: {:?}", result);
     Ok(())
+}
+
+#[derive(Debug)]
+struct CommentDetails {
+    comment: Comment<Runtime>,
+    kids: Vec<CommentDetails>,
+}
+
+#[derive(Debug)]
+struct PostDetails {
+    post: Post<Runtime>,
+    comments: Vec<CommentDetails>,
+}
+
+async fn get_post_details(api: &Api, post_id: u32) -> Result<Option<PostDetails>, mycelium::Error> {
+    println!("getting the post details of {}", post_id);
+    let post = get_post(api, post_id).await?;
+    if let Some(post) = post {
+        let comment_replies = get_comment_replies(api, post_id).await?;
+        Ok(Some(PostDetails {
+            post,
+            comments: comment_replies,
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
+async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post<Runtime>>, mycelium::Error> {
+    let post: Option<Post<Runtime>> = api
+        .fetch_storage_map("ForumModule", "AllPosts", post_id)
+        .await?;
+
+    Ok(post)
+}
+
+async fn get_kids(
+    api: &Api,
+    item_id: u32,
+) -> Result<Option<BoundedVec<u32, MaxComments>>, mycelium::Error> {
+    let kids: Option<BoundedVec<u32, MaxComments>> = api
+        .fetch_storage_map("ForumModule", "Kids", item_id)
+        .await?;
+    Ok(kids)
+}
+
+#[async_recursion]
+async fn get_comment_replies(
+    api: &Api,
+    item_id: u32,
+) -> Result<Vec<CommentDetails>, mycelium::Error> {
+    println!("getting comment replies for: {}", item_id);
+    let mut comment_details = vec![];
+    if let Some(kids) = get_kids(api, item_id).await? {
+        for kid in kids {
+            let comment = get_comment(api, kid)
+                .await?
+                .expect("must have a comment entry");
+
+            let kid_comments = get_comment_replies(api, kid).await?;
+            comment_details.push(CommentDetails {
+                comment,
+                kids: kid_comments,
+            });
+        }
+    }
+    Ok(comment_details)
+}
+
+async fn get_comment(
+    api: &Api,
+    comment_id: u32,
+) -> Result<Option<Comment<Runtime>>, mycelium::Error> {
+    println!("getting comment {}", comment_id);
+    let comment: Option<Comment<Runtime>> = api
+        .fetch_storage_map("ForumModule", "AllComments", comment_id)
+        .await?;
+
+    Ok(comment)
 }
