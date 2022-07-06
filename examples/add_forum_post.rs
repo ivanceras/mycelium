@@ -1,5 +1,5 @@
 //! Calling function from a custom pallet
-#![deny(warnings)]
+#![allow(warnings)]
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
@@ -7,6 +7,8 @@ use mycelium::{
     types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
     Api,
 };
+use node_template_runtime::Runtime;
+use pallet_forum::Post;
 use sp_core::sr25519::Pair;
 use sp_keyring::AccountKeyring;
 use std::{thread, time};
@@ -42,13 +44,13 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let prev_item = current_item.saturating_sub(1);
 
-    let inserted_post: Option<(BoundedVec<u8, ConstU32<280>>, AccountId32)> = api
-        .fetch_storage_map("ForumModule", "Post", prev_item)
+    let inserted_post: Option<Post<Runtime>> = api
+        .fetch_storage_map("ForumModule", "AllPosts", prev_item)
         .await?;
 
     println!("inserted-post: {:#?}", inserted_post);
     if let Some(inserted_post) = inserted_post {
-        let posted_content = String::from_utf8_lossy(&inserted_post.0);
+        let posted_content = String::from_utf8_lossy(&inserted_post.content);
         println!("posted content: {:?}", posted_content);
     }
 
