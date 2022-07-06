@@ -8,11 +8,14 @@ pub use pallet::*;
 #[cfg(test)]
 mod mock;
 
+mod types;
+
 #[cfg(test)]
 mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
+	pub use crate::types::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
@@ -36,23 +39,15 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	/// The post (post_id, (content, author))
 	#[pallet::storage]
 	#[pallet::getter(fn post)]
-	pub type Post<T: Config> =
-		StorageMap<_, Twox64Concat, u32, (BoundedVec<u8, T::MaxContentLength>, T::AccountId)>;
+	pub type Posts<T: Config> = StorageMap<_, Twox64Concat, u32, PostContent<T>>;
 
 	/// The comment (post_id, comment_id, (content, author, parent_comment))
 	#[pallet::storage]
 	#[pallet::getter(fn comment)]
-	pub type Comment<T: Config> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		u32,
-		Twox64Concat,
-		u32,
-		(BoundedVec<u8, T::MaxContentLength>, T::AccountId, Option<u32>),
-	>;
+	pub type Comments<T: Config> =
+		StorageDoubleMap<_, Twox64Concat, u32, Twox64Concat, u32, CommentContent<T>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn kids)]
@@ -104,7 +99,7 @@ pub mod pallet {
 			// use the total number of items as post_id
 			let post_id = ItemCounter::<T>::get();
 
-			Post::<T>::insert(post_id, (content, who.clone()));
+			Posts::<T>::insert(post_id, PostContent::new(post_id, content, who.clone()));
 			// increment the item counter
 			Self::increment_item_counter();
 			// Emit a PostSubmitted event
@@ -143,10 +138,10 @@ pub mod pallet {
 		) -> u32 {
 			log::warn!("adding comment to..");
 			let comment_id = ItemCounter::<T>::get();
-			Comment::<T>::insert(
+			Comments::<T>::insert(
 				post_id,
 				comment_id,
-				(content.clone(), who.clone(), parent_comment),
+				CommentContent::new(comment_id, content.clone(), who.clone(), parent_comment),
 			);
 			Self::increment_item_counter();
 			let parent_item =
@@ -166,11 +161,9 @@ pub mod pallet {
 			comment_id
 		}
 
-		pub fn get_post(
-			post_id: u32,
-		) -> Option<(BoundedVec<u8, T::MaxContentLength>, T::AccountId)> {
+		pub fn get_post(post_id: u32) -> Option<PostContent<T>> {
 			log::info!("getting post_id: {}", post_id);
-			Post::<T>::get(post_id)
+			Posts::<T>::get(post_id)
 		}
 	}
 }

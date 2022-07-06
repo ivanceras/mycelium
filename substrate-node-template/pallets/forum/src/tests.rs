@@ -1,5 +1,8 @@
 use crate::pallet;
+use crate::CommentContent;
+use crate::PostContent;
 use crate::{mock::*, Error};
+use codec::MaxEncodedLen;
 use frame_support::BoundedSlice;
 use frame_support::BoundedVec;
 use frame_support::{assert_noop, assert_ok};
@@ -15,7 +18,7 @@ fn it_works_posting_content() {
 		println!("post: {:#?}", ForumModule::post(0));
 		assert_eq!(ForumModule::item_counter(), 1);
 
-		assert_eq!(ForumModule::get_post(0), Some((content, 1)));
+		assert_eq!(ForumModule::get_post(0), Some(PostContent::new(0, content, 1)));
 
 		let comment = BoundedVec::try_from(b"I'm a comment".to_vec()).unwrap();
 		assert_ok!(ForumModule::comment_on(Origin::signed(2), 0, None, comment.clone()));
@@ -34,9 +37,11 @@ fn it_works_posting_content() {
 			BoundedVec::try_from(b"> I'm a comment \nThis".to_vec()).unwrap()
 		));
 
-		assert_eq!(ForumModule::comment(0, 1), Some((comment, 2, None)));
+		assert_eq!(ForumModule::comment(0, 1), Some(CommentContent::new(1, comment, 2, None)));
 		assert_eq!(ForumModule::kids(0), Some(BoundedVec::try_from(vec![1, 2]).unwrap()));
 		assert_eq!(ForumModule::kids(1), Some(BoundedVec::try_from(vec![3]).unwrap()));
 		assert_eq!(ForumModule::kids(2), None);
+
+		assert_eq!(PostContent::<Test>::max_encoded_len(), 294);
 	});
 }
