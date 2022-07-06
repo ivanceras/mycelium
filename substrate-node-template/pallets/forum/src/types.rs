@@ -6,9 +6,9 @@ use sp_std::prelude::*;
 #[derive(Encode, Decode, TypeInfo, RuntimeDebug)]
 #[scale_info(skip_type_params(T))]
 pub struct Post<T: Config> {
-	post_id: u32,
-	content: BoundedVec<u8, T::MaxContentLength>,
-	author: T::AccountId,
+	pub post_id: u32,
+	pub content: BoundedVec<u8, T::MaxContentLength>,
+	pub author: T::AccountId,
 }
 
 impl<T: Config> MaxEncodedLen for Post<T> {

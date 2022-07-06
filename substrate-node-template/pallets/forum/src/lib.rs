@@ -116,8 +116,7 @@ pub mod pallet {
 			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let comment_id = Self::add_comment_to(who.clone(), post_id, parent_comment, content);
-			Self::deposit_event(Event::CommentSubmitted(post_id, comment_id, who));
+			Self::add_comment_to(who.clone(), post_id, parent_comment, content)?;
 			Ok(())
 		}
 	}
@@ -135,7 +134,7 @@ pub mod pallet {
 			post_id: u32,
 			parent_comment: Option<u32>,
 			content: BoundedVec<u8, T::MaxContentLength>,
-		) -> u32 {
+		) -> DispatchResult {
 			log::warn!("adding comment to..");
 			let comment_id = ItemCounter::<T>::get();
 			AllComments::<T>::insert(
@@ -158,7 +157,8 @@ pub mod pallet {
 				log::info!("inserting a new comment: {} for post: {}", comment_id, post_id);
 				Kids::<T>::insert(parent_item, BoundedVec::try_from(vec![comment_id]).unwrap());
 			}
-			comment_id
+			Self::deposit_event(Event::CommentSubmitted(post_id, comment_id, who));
+			Ok(())
 		}
 
 		pub fn get_post(post_id: u32) -> Option<Post<T>> {
