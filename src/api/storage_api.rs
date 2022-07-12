@@ -16,6 +16,15 @@ impl Api {
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
+    pub async fn fetch_opaque_storage_value<V>(
+        &self,
+        module: &str,
+        storage_name: &str,
+    ) -> Result<Option<Vec<u8>>, Error> {
+        let storage_key = self.metadata.storage_value_key(module, storage_name)?;
+        self.fetch_opaque_storage_by_key_hash(storage_key).await
+    }
+
     pub async fn fetch_storage_map<K, V>(
         &self,
         module: &str,
@@ -28,6 +37,19 @@ impl Api {
     {
         let storage_key = self.metadata.storage_map_key(module, storage_name, key)?;
         self.fetch_storage_by_key_hash(storage_key).await
+    }
+
+    pub async fn fetch_opaque_storage_map<K>(
+        &self,
+        module: &str,
+        storage_name: &str,
+        key: K,
+    ) -> Result<Option<Vec<u8>>, Error>
+    where
+        K: Encode,
+    {
+        let storage_key = self.metadata.storage_map_key(module, storage_name, key)?;
+        self.fetch_opaque_storage_by_key_hash(storage_key).await
     }
 
     pub async fn fetch_storage_double_map<K, Q, V>(
@@ -46,6 +68,23 @@ impl Api {
             self.metadata
                 .storage_double_map_key(module, storage_name, first, second)?;
         self.fetch_storage_by_key_hash(storage_key).await
+    }
+
+    pub async fn fetch_opaque_storage_double_map<K, Q>(
+        &self,
+        module: &str,
+        storage_name: &str,
+        first: K,
+        second: Q,
+    ) -> Result<Option<Vec<u8>>, Error>
+    where
+        K: Encode,
+        Q: Encode,
+    {
+        let storage_key =
+            self.metadata
+                .storage_double_map_key(module, storage_name, first, second)?;
+        self.fetch_opaque_storage_by_key_hash(storage_key).await
     }
 
     pub async fn fetch_storage_by_key_hash<V>(
