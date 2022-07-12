@@ -13,4 +13,4 @@ pub use sp_version;
 mod api;
 mod error;
 pub mod types;
-mod utils;
+pub mod utils;

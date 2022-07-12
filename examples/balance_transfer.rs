@@ -9,13 +9,22 @@ use mycelium::{
     },
     Api, Metadata,
 };
+use sp_core::Pair;
 use sp_keyring::AccountKeyring;
+use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
     let from: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
+    println!("raw vec: {:?}", from.to_raw_vec());
 
     let to: AccountId32 = AccountKeyring::Charlie.to_account_id();
+
+    let alt_to = AccountId32::from_str("5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y")
+        .expect("must not error");
+
+    assert_eq!(to, alt_to);
+
     println!("transfering balance from: {:?} to: {}", from.as_ref(), to);
 
     let api = Api::new("http://localhost:9933").await?;
