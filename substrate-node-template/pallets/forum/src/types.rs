@@ -1,6 +1,5 @@
 use crate::Config;
 use frame_support::pallet_prelude::*;
-use frame_system::pallet_prelude::*;
 use sp_std::prelude::*;
 
 #[derive(Encode, Decode, TypeInfo, RuntimeDebug)]
