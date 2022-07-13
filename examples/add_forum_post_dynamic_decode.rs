@@ -1,6 +1,6 @@
 //! Calling function from a custom pallet and using types that are redefinition to disconnect from
 //! encoding
-#![allow(warnings)]
+#![deny(warnings)]
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use frame_support::pallet_prelude::ConstU32;
@@ -10,7 +10,6 @@ use mycelium::{
     types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
     Api,
 };
-use node_template_runtime::Runtime;
 use sp_core::sr25519::Pair;
 use sp_keyring::AccountKeyring;
 use std::{thread, time};
@@ -37,13 +36,13 @@ pub struct Comment {
     parent_item: Option<u32>,
 }
 
-#[derive(Debug)]
+#[derive(Encode, Decode, Debug)]
 struct CommentDetails {
     comment: Comment,
     kids: Vec<CommentDetails>,
 }
 
-#[derive(Debug)]
+#[derive(Encode, Decode, Debug)]
 struct PostDetails {
     post: Post,
     comments: Vec<CommentDetails>,
@@ -88,7 +87,7 @@ async fn main() -> Result<(), mycelium::Error> {
         .await?;
 
     println!("inserted-post: {:#?}", inserted_post);
-    if let Some(mut inserted_post) = inserted_post {
+    if let Some(inserted_post) = inserted_post {
         let inserted_post = Post::decode(&mut inserted_post.as_slice()).expect("must not error");
         let posted_content = String::from_utf8_lossy(&inserted_post.content);
         println!("posted content: {:?}", posted_content);
@@ -131,6 +130,9 @@ async fn main() -> Result<(), mycelium::Error> {
     let post_details = get_post_details(&api, last_post_id).await?;
     dbg!(post_details);
 
+    let all_posts = get_all_posts(&api).await?;
+    dbg!(all_posts);
+
     Ok(())
 }
 
@@ -169,6 +171,24 @@ async fn get_post_details(api: &Api, post_id: u32) -> Result<Option<PostDetails>
     } else {
         Ok(None)
     }
+}
+
+async fn get_all_posts(api: &Api) -> Result<Vec<Post>, mycelium::Error> {
+    let mut all_post = Vec::with_capacity(10);
+    println!("---->Getting all the post_id...");
+    let next_to: Option<u32> = None;
+    let storage_values: Option<Vec<Vec<u8>>> = api
+        .fetch_opaque_storage_map_paged("ForumModule", "AllPosts", 10, next_to)
+        .await?;
+    if let Some(storage_values) = storage_values {
+        for bytes in storage_values.into_iter() {
+            let post: Option<Post> = Post::decode(&mut bytes.as_slice()).ok();
+            if let Some(post) = post {
+                all_post.push(post);
+            }
+        }
+    }
+    Ok(all_post)
 }
 
 async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post>, mycelium::Error> {

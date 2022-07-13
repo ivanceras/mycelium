@@ -3,4 +3,4 @@ set -ev
 
 wasm-pack build --target web --release &&\
 
-http-server -p 4000
+http-server -v -p 4000
