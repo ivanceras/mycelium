@@ -18,6 +18,10 @@ use std::{thread, time};
 type MaxComments = ConstU32<1000>;
 type MaxContentLength = ConstU32<280>;
 
+/// Note: Make sure that the fields are in the same order as in the original type stored in the
+/// database, otherwise it will be unable to decode back to this user defined type
+/// The name of the field doesn't matter, only the arragement of the field and the type to be the
+/// same
 #[derive(Encode, Decode, Debug)]
 struct Post {
     post_id: u32,
@@ -67,9 +71,12 @@ async fn main() -> Result<(), mycelium::Error> {
 
     thread::sleep(time::Duration::from_millis(5_000));
 
-    let current_item: Option<u32> = api
-        .fetch_storage_value("ForumModule", "ItemCounter")
+    let current_item: Option<Vec<u8>> = api
+        .fetch_opaque_storage_value("ForumModule", "ItemCounter")
         .await?;
+
+    let current_item: Option<u32> =
+        current_item.map(|v| Decode::decode(&mut v.as_slice()).expect("must not error"));
 
     println!("current item: {:?}", current_item);
     let current_item = current_item.unwrap();

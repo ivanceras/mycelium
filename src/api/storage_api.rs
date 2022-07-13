@@ -16,7 +16,7 @@ impl Api {
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
-    pub async fn fetch_opaque_storage_value<V>(
+    pub async fn fetch_opaque_storage_value(
         &self,
         module: &str,
         storage_name: &str,
