@@ -259,9 +259,10 @@ li+li {
   :root { 
     --background-color: black; 
     --text-color:  #eee; 
+    --text-secondary-color: #aaa;
     --code-bg: #fafafa;
     --quote-bg: #fafafa;
-    --quote-border: #eaeaea;
+    --quote-border: #222;
   }
 }
 
@@ -269,6 +270,7 @@ li+li {
   :root { 
     --background-color: white; 
     --text-color:  #222; 
+    --text-secondary-color: #aaa;
     --code-bg: #fafafa;
     --quote-bg: #fafafa;
     --quote-border: #eaeaea;
@@ -288,7 +290,7 @@ body {
 	margin: 10px 10px;
     width: 15px;
     height: 30px;
-    font-size: 20px;
+    font-size: 18pt;
 }
 
 
@@ -297,12 +299,17 @@ body {
     list-style: none;
 }
 
-.post-detail-stats{
-    font-size: 12px;
+.post-detail-stats, .comment-stats{
+    font-size: 8pt;
+}
+
+.post-detail-stats a, .comment-stats a{
+    margin: 5px 10px;
+    color: var(--text-secondary-color);
 }
 
 .posts h2, .post-detail h2 {
-    font-size: 20px;
+    font-size: 16pt;
     text-decoration: none;
     text-align: left;
     margin: 5px 10px;
@@ -313,4 +320,13 @@ body {
 
 .comment-details li{
     list-style: none;
+}
+
+.comment{
+    border-left: 5px solid var(--quote-border);
+}
+
+.comment-text{
+    font-size: 12pt;
+    margin: 20px 20px;
 }

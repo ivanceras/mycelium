@@ -51,6 +51,18 @@ pub struct Comment {
     pub parent_item: u32,
 }
 
+impl PostDetail {
+    fn link(&self) -> String {
+        self.post.link()
+    }
+    fn post_id(&self) -> u32 {
+        self.post.post_id
+    }
+    fn author(&self) -> String {
+        self.post.author()
+    }
+}
+
 impl CommentDetail {
     pub fn content(&self) -> Cow<'_, str> {
         self.comment.content()
@@ -61,11 +73,21 @@ impl Post {
     pub fn content(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.content)
     }
+
+    pub fn link(&self) -> String {
+        format!("/item/{}", self.post_id)
+    }
+    fn author(&self) -> String {
+        self.author.to_string()
+    }
 }
 
 impl Comment {
     pub fn content(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.content)
+    }
+    fn author(&self) -> String {
+        self.author.to_string()
     }
 }
 
@@ -99,13 +121,26 @@ impl Content {
     }
 
     fn view_post_detail(&self, post_detail: &PostDetail) -> Node<Msg> {
+        let post_id = post_detail.post_id();
         div(
             [class("post-detail")],
             [
                 self.view_post(&post_detail.post),
                 div(
                     [class("post-detail-stats")],
-                    [text!("{} comments", post_detail.reply_count)],
+                    [
+                        a([], [text!("by: {}", post_detail.author())]),
+                        a(
+                            [
+                                href(post_detail.link()),
+                                on_click(move |e| {
+                                    e.prevent_default();
+                                    Msg::ShowPost(post_id)
+                                }),
+                            ],
+                            [text!("{} comments", post_detail.reply_count)],
+                        ),
+                    ],
                 ),
                 ul(
                     [class("comment-details")],
@@ -126,7 +161,7 @@ impl Content {
                 [],
                 [a(
                     [
-                        href(format!("/item/{}", post_id)),
+                        href(post.link()),
                         on_click(move |e| {
                             e.prevent_default();
                             Msg::ShowPost(post_id)
@@ -155,6 +190,15 @@ impl Content {
     }
 
     fn view_comment(&self, comment: &Comment) -> Node<Msg> {
-        li([class("comment")], [text(comment.content())])
+        li(
+            [class("comment")],
+            [
+                div([class("comment-text")], [text(comment.content())]),
+                div(
+                    [class("comment-stats")],
+                    [a([], [text!("by: {}", comment.author())])],
+                ),
+            ],
+        )
     }
 }
