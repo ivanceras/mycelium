@@ -19,41 +19,50 @@ impl Content {
     }
 
     fn view_error(&self, error: &crate::Error) -> Node<Msg> {
-        div([], [text!("Something went wrong: {:#?}", error)])
+        div(
+            [class("error")],
+            [text!("Something went wrong: {:#?}", error)],
+        )
     }
 
     fn view_posts(&self, posts: &[Post]) -> Node<Msg> {
         if posts.is_empty() {
-            div([], [text("There are no posts yet!")])
+            div([class("empty-posts")], [text("There are no posts yet!")])
         } else {
-            ol([], posts.into_iter().map(|post| self.view_post(post)))
+            ol(
+                [class("posts")],
+                posts.into_iter().map(|post| self.view_post(post)),
+            )
         }
     }
 
     fn view_post(&self, post: &Post) -> Node<Msg> {
         let post_id = post.post_id;
         li(
-            [],
-            [a(
-                [
-                    href(format!("/item/{}", post_id)),
-                    on_click(move |e| {
-                        e.prevent_default();
-                        Msg::ShowPost(post_id)
-                    }),
-                ],
-                [text(post.content())],
+            [class("post")],
+            [h2(
+                [],
+                [a(
+                    [
+                        href(format!("/item/{}", post_id)),
+                        on_click(move |e| {
+                            e.prevent_default();
+                            Msg::ShowPost(post_id)
+                        }),
+                    ],
+                    [text(post.content())],
+                )],
             )],
         )
     }
 
     fn view_post_detail(&self, post_detail: &PostDetails) -> Node<Msg> {
         div(
-            [],
+            [class("post-detail")],
             [
                 self.view_post(&post_detail.post),
                 ul(
-                    [],
+                    [class("comment-details")],
                     post_detail
                         .comments
                         .iter()
@@ -65,7 +74,7 @@ impl Content {
 
     fn view_comment_details(&self, comment_detail: &CommentDetails) -> Node<Msg> {
         li(
-            [],
+            [class("comment-detail")],
             [
                 self.view_comment(&comment_detail.comment),
                 ul(
@@ -80,6 +89,6 @@ impl Content {
     }
 
     fn view_comment(&self, comment: &Comment) -> Node<Msg> {
-        li([], [text(comment.content())])
+        li([class("comment")], [text(comment.content())])
     }
 }
