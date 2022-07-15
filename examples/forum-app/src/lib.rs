@@ -1,19 +1,17 @@
-use content::Content;
+use content::*;
 use mycelium::Api;
 use sauron::prelude::*;
-use types::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
 mod content;
 mod fetch;
-mod types;
 
 enum Msg {
     FetchPosts,
     ShowPost(u32),
-    PostsReceived(Vec<Post>),
-    PostDetailsReceived(PostDetails),
+    PostsReceived(Vec<PostDetail>),
+    PostDetailsReceived(PostDetail),
     Errored(Error),
     InitApi(Api),
     UrlChanged(String),
@@ -69,7 +67,7 @@ impl App {
         Cmd::new(move |program| {
             let async_fetch = |program: Program<Self, Msg>| async move {
                 let api = api.unwrap();
-                match fetch::get_all_posts(&api).await {
+                match fetch::get_post_list(&api).await {
                     Ok(posts) => {
                         log::info!("Go some posts..: {:?}", posts);
                         program.dispatch(Msg::PostsReceived(posts));

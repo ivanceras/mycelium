@@ -297,6 +297,10 @@ body {
     list-style: none;
 }
 
+.post-detail-stats{
+    font-size: 12px;
+}
+
 .posts h2, .post-detail h2 {
     font-size: 20px;
     text-decoration: none;

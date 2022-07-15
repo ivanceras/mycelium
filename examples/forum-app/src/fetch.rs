@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::content::*;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use frame_support::pallet_prelude::ConstU32;
@@ -17,7 +17,7 @@ const ALL_POSTS: &str = "AllPosts";
 const ALL_COMMENTS: &str = "AllComments";
 const KIDS: &str = "Kids";
 
-pub async fn get_all_posts(api: &Api) -> Result<Vec<Post>, mycelium::Error> {
+pub async fn get_post_list(api: &Api) -> Result<Vec<PostDetail>, mycelium::Error> {
     let mut all_post = Vec::with_capacity(10);
     log::info!("---->Getting all the post_id...");
     let next_to: Option<u32> = None;
@@ -30,25 +30,40 @@ pub async fn get_all_posts(api: &Api) -> Result<Vec<Post>, mycelium::Error> {
             log::info!("At post: {}", i);
             let post: Option<Post> = Post::decode(&mut bytes.as_slice()).ok();
             if let Some(post) = post {
-                all_post.push(post);
+                let reply_count = get_reply_count(api, post.post_id).await?;
+                all_post.push(PostDetail {
+                    post,
+                    reply_count,
+                    comments: vec![],
+                });
             }
         }
     }
-    log::info!("done get_all_posts..: {:#?}", all_post);
+    log::info!("done get_post_list..: {:#?}", all_post);
     Ok(all_post)
+}
+
+pub async fn get_reply_count(api: &Api, post_id: u32) -> Result<usize, mycelium::Error> {
+    let reply_count = get_kids(api, post_id)
+        .await?
+        .map(|kids| kids.len())
+        .unwrap_or(0);
+    Ok(reply_count)
 }
 
 pub async fn get_post_details(
     api: &Api,
     post_id: u32,
-) -> Result<Option<PostDetails>, mycelium::Error> {
+) -> Result<Option<PostDetail>, mycelium::Error> {
     log::info!("getting the post details of {}", post_id);
     let post = get_post(api, post_id).await?;
     if let Some(post) = post {
         let comment_replies = get_comment_replies(api, post_id).await?;
-        Ok(Some(PostDetails {
+        let reply_count = get_reply_count(api, post_id).await?;
+        Ok(Some(PostDetail {
             post,
             comments: comment_replies,
+            reply_count,
         }))
     } else {
         Ok(None)
@@ -86,7 +101,7 @@ async fn get_kids(
 pub async fn get_comment_replies(
     api: &Api,
     item_id: u32,
-) -> Result<Vec<CommentDetails>, mycelium::Error> {
+) -> Result<Vec<CommentDetail>, mycelium::Error> {
     let mut comment_details = vec![];
     if let Some(kids) = get_kids(api, item_id).await? {
         log::info!("kids of item_id: {} are: {:?}", item_id, kids);
@@ -97,7 +112,7 @@ pub async fn get_comment_replies(
                 .expect("must have a comment entry");
 
             let kid_comments = get_comment_replies(api, kid).await?;
-            comment_details.push(CommentDetails {
+            comment_details.push(CommentDetail {
                 comment,
                 kids: kid_comments,
             });

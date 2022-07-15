@@ -1,18 +1,78 @@
-use crate::types::*;
 use crate::Msg;
+use async_recursion::async_recursion;
+use codec::{Decode, Encode};
+use frame_support::pallet_prelude::ConstU32;
+use frame_support::BoundedVec;
+use mycelium::sp_core::crypto::AccountId32;
+use mycelium::sp_core::sr25519::Pair;
+use mycelium::{
+    types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
+    Api,
+};
 use sauron::prelude::*;
+use std::borrow::Cow;
+use wasm_bindgen::prelude::*;
+
+pub type MaxComments = ConstU32<1000>;
+pub type MaxContentLength = ConstU32<280>;
 
 #[derive(Debug, derive_more::From)]
 pub enum Content {
-    Posts(Vec<Post>),
-    PostDetail(PostDetails),
+    Posts(Vec<PostDetail>),
+    PostDetail(PostDetail),
     Errored(crate::Error),
+}
+
+#[derive(Debug)]
+pub struct CommentDetail {
+    pub comment: Comment,
+    pub kids: Vec<CommentDetail>,
+}
+
+#[derive(Debug)]
+pub struct PostDetail {
+    pub post: Post,
+    pub comments: Vec<CommentDetail>,
+    pub reply_count: usize,
+}
+
+#[derive(Encode, Decode, Debug)]
+pub struct Post {
+    pub post_id: u32,
+    pub content: BoundedVec<u8, MaxContentLength>,
+    pub author: AccountId32,
+}
+
+#[derive(Encode, Decode, Debug)]
+pub struct Comment {
+    pub comment_id: u32,
+    pub content: BoundedVec<u8, MaxContentLength>,
+    pub author: AccountId32,
+    pub parent_item: u32,
+}
+
+impl CommentDetail {
+    pub fn content(&self) -> Cow<'_, str> {
+        self.comment.content()
+    }
+}
+
+impl Post {
+    pub fn content(&self) -> Cow<'_, str> {
+        String::from_utf8_lossy(&self.content)
+    }
+}
+
+impl Comment {
+    pub fn content(&self) -> Cow<'_, str> {
+        String::from_utf8_lossy(&self.content)
+    }
 }
 
 impl Content {
     pub fn view(&self) -> Node<Msg> {
         match self {
-            Content::Posts(posts) => self.view_posts(posts),
+            Content::Posts(post_details) => self.view_post_detail_list(post_details),
             Content::PostDetail(post_detail) => self.view_post_detail(post_detail),
             Content::Errored(error) => self.view_error(error),
         }
@@ -25,15 +85,37 @@ impl Content {
         )
     }
 
-    fn view_posts(&self, posts: &[Post]) -> Node<Msg> {
-        if posts.is_empty() {
+    fn view_post_detail_list(&self, post_details: &[PostDetail]) -> Node<Msg> {
+        if post_details.is_empty() {
             div([class("empty-posts")], [text("There are no posts yet!")])
         } else {
             ol(
-                [class("posts")],
-                posts.into_iter().map(|post| self.view_post(post)),
+                [class("post-details")],
+                post_details
+                    .into_iter()
+                    .map(|post| self.view_post_detail(post)),
             )
         }
+    }
+
+    fn view_post_detail(&self, post_detail: &PostDetail) -> Node<Msg> {
+        div(
+            [class("post-detail")],
+            [
+                self.view_post(&post_detail.post),
+                div(
+                    [class("post-detail-stats")],
+                    [text!("{} comments", post_detail.reply_count)],
+                ),
+                ul(
+                    [class("comment-details")],
+                    post_detail
+                        .comments
+                        .iter()
+                        .map(|comment| self.view_comment_detail(comment)),
+                ),
+            ],
+        )
     }
 
     fn view_post(&self, post: &Post) -> Node<Msg> {
@@ -56,23 +138,7 @@ impl Content {
         )
     }
 
-    fn view_post_detail(&self, post_detail: &PostDetails) -> Node<Msg> {
-        div(
-            [class("post-detail")],
-            [
-                self.view_post(&post_detail.post),
-                ul(
-                    [class("comment-details")],
-                    post_detail
-                        .comments
-                        .iter()
-                        .map(|comment| self.view_comment_details(comment)),
-                ),
-            ],
-        )
-    }
-
-    fn view_comment_details(&self, comment_detail: &CommentDetails) -> Node<Msg> {
+    fn view_comment_detail(&self, comment_detail: &CommentDetail) -> Node<Msg> {
         li(
             [class("comment-detail")],
             [
@@ -82,7 +148,7 @@ impl Content {
                     comment_detail
                         .kids
                         .iter()
-                        .map(|comment| self.view_comment_details(comment)),
+                        .map(|comment| self.view_comment_detail(comment)),
                 ),
             ],
         )
