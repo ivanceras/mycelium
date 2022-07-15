@@ -180,21 +180,6 @@ impl Application<Msg> for App {
     }
 }
 
-async fn start() -> anyhow::Result<()> {
-    let api = Api::new("http://localhost:9933").await?;
-    log::info!("Getting all the posts..");
-    let posts = fetch::get_all_posts(&api).await?;
-    log::info!("posts: {:#?}", posts);
-    for (n, post) in posts.iter().enumerate() {
-        log::info!("post[{}]:{}", n, post.content());
-        let replies = fetch::get_comment_replies(&api, post.post_id).await?;
-        for (c, comment) in replies.iter().enumerate() {
-            log::info!("\tcomment[{}]: {}", c, comment.content());
-        }
-    }
-    log::info!("Done..");
-    Ok(())
-}
 #[wasm_bindgen(start)]
 pub async fn startup() {
     console_log::init_with_level(log::Level::Trace).ok();
