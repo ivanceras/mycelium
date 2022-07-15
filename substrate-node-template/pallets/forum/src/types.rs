@@ -9,11 +9,12 @@ pub struct Post<T: Config> {
 	pub content: BoundedVec<u8, T::MaxContentLength>,
 	pub author: T::AccountId,
 	pub timestamp: T::Moment,
+	pub block_number: T::BlockNumber,
 }
 
 impl<T: Config> MaxEncodedLen for Post<T> {
 	fn max_encoded_len() -> usize {
-		<(u32, BoundedVec<u8, T::MaxContentLength>, T::AccountId, T::Moment)>::max_encoded_len()
+		<(u32, BoundedVec<u8, T::MaxContentLength>, T::AccountId, T::Moment, T::BlockNumber)>::max_encoded_len()
 	}
 }
 
@@ -22,7 +23,6 @@ impl<T: Config> PartialEq for Post<T> {
 		self.post_id == other.post_id
 			&& self.content == other.content
 			&& self.author == other.author
-			&& self.timestamp == other.timestamp
 	}
 }
 
@@ -34,11 +34,12 @@ pub struct Comment<T: Config> {
 	pub author: T::AccountId,
 	pub parent_item: u32,
 	pub timestamp: T::Moment,
+	pub block_number: T::BlockNumber,
 }
 
 impl<T: Config> MaxEncodedLen for Comment<T> {
 	fn max_encoded_len() -> usize {
-		<(u32, BoundedVec<u8, T::MaxContentLength>, T::AccountId, u32, T::Moment)>::max_encoded_len(
+		<(u32, BoundedVec<u8, T::MaxContentLength>, T::AccountId, u32, T::Moment, T::BlockNumber)>::max_encoded_len(
 		)
 	}
 }
@@ -49,6 +50,5 @@ impl<T: Config> PartialEq for Comment<T> {
 			&& self.content == other.content
 			&& self.author == other.author
 			&& self.parent_item == other.parent_item
-			&& self.timestamp == other.timestamp
 	}
 }

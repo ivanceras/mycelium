@@ -101,7 +101,13 @@ pub mod pallet {
 
 			AllPosts::<T>::insert(
 				post_id,
-				Post { post_id, content, timestamp: Self::timestamp(), author: who.clone() },
+				Post {
+					post_id,
+					content,
+					timestamp: Self::timestamp(),
+					author: who.clone(),
+					block_number: Self::block_number(),
+				},
 			);
 			// increment the item counter
 			Self::increment_item_counter();
@@ -127,6 +133,10 @@ pub mod pallet {
 		pub fn timestamp() -> T::Moment {
 			pallet_timestamp::Pallet::<T>::get()
 		}
+
+		pub fn block_number() -> T::BlockNumber {
+			<frame_system::Pallet<T>>::block_number()
+		}
 		/// increment th ItemCounter storage value
 		fn increment_item_counter() {
 			ItemCounter::<T>::mutate(|i| {
@@ -149,6 +159,7 @@ pub mod pallet {
 					author: who.clone(),
 					parent_item,
 					timestamp: Self::timestamp(),
+					block_number: Self::block_number(),
 				},
 			);
 			Self::increment_item_counter();
