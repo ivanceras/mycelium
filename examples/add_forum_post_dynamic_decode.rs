@@ -52,10 +52,10 @@ struct PostDetails {
     comments: Vec<CommentDetails>,
 }
 
-const DELAY: u64 = 3; // in seconds
+const DELAY: u64 = 1500; // in ms
 
-fn sleep(s: u64) {
-    thread::sleep(time::Duration::from_millis(s * 1_000));
+fn sleep(ms: u64) {
+    thread::sleep(time::Duration::from_millis(ms));
 }
 
 #[tokio::main]

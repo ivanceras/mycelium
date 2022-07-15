@@ -132,6 +132,7 @@ impl Content {
                 [class("post-details")],
                 post_details
                     .into_iter()
+                    .rev()
                     .map(|post| self.view_post_detail(post)),
             )
         }

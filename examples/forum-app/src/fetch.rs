@@ -40,6 +40,7 @@ pub async fn get_post_list(api: &Api) -> Result<Vec<PostDetail>, mycelium::Error
         }
     }
     log::info!("done get_post_list..: {:#?}", all_post);
+    all_post.sort_unstable_by_key(|item| item.post.post_id);
     Ok(all_post)
 }
 
@@ -118,6 +119,7 @@ pub async fn get_comment_replies(
             });
         }
     }
+    comment_details.sort_unstable_by_key(|item| item.comment.comment_id);
     Ok(comment_details)
 }
 
