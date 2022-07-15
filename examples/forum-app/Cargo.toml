@@ -23,5 +23,6 @@ anyhow = "1.0.58"
 sauron = { version = "0.49.0", path = "../../../sauron" }
 derive_more = "0.99.17"
 thiserror = "1.0.31"
+chrono = { version = "0.4.19", features = ["serde", "wasmbind"] }
 
 

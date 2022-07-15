@@ -6,6 +6,7 @@ use wasm_bindgen_futures::spawn_local;
 
 mod content;
 mod fetch;
+mod util;
 
 enum Msg {
     FetchPosts,

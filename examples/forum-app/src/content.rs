@@ -1,3 +1,4 @@
+use crate::util;
 use crate::Msg;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
@@ -41,6 +42,7 @@ pub struct Post {
     pub post_id: u32,
     pub content: BoundedVec<u8, MaxContentLength>,
     pub author: AccountId32,
+    pub timestamp: u64,
 }
 
 #[derive(Encode, Decode, Debug)]
@@ -49,6 +51,7 @@ pub struct Comment {
     pub content: BoundedVec<u8, MaxContentLength>,
     pub author: AccountId32,
     pub parent_item: u32,
+    pub timestamp: u64,
 }
 
 impl PostDetail {
@@ -60,6 +63,9 @@ impl PostDetail {
     }
     fn author(&self) -> String {
         self.post.author()
+    }
+    fn time_ago(&self) -> String {
+        self.post.time_ago()
     }
 }
 
@@ -80,6 +86,9 @@ impl Post {
     fn author(&self) -> String {
         self.author.to_string()
     }
+    fn time_ago(&self) -> String {
+        util::timestamp_ago(self.timestamp)
+    }
 }
 
 impl Comment {
@@ -88,6 +97,9 @@ impl Comment {
     }
     fn author(&self) -> String {
         self.author.to_string()
+    }
+    fn time_ago(&self) -> String {
+        util::timestamp_ago(self.timestamp)
     }
 }
 
@@ -130,6 +142,7 @@ impl Content {
                     [class("post-detail-stats")],
                     [
                         a([], [text!("by: {}", post_detail.author())]),
+                        a([], [text!("{} ago", post_detail.time_ago())]),
                         a(
                             [
                                 href(post_detail.link()),
@@ -196,7 +209,10 @@ impl Content {
                 div([class("comment-text")], [text(comment.content())]),
                 div(
                     [class("comment-stats")],
-                    [a([], [text!("by: {}", comment.author())])],
+                    [
+                        a([], [text!("by: {}", comment.author())]),
+                        a([], [text!("{} ago", comment.time_ago())]),
+                    ],
                 ),
             ],
         )
