@@ -6,6 +6,7 @@ use sauron::prelude::*;
 pub enum Content {
     Posts(Vec<Post>),
     PostDetail(PostDetails),
+    Errored(crate::Error),
 }
 
 impl Content {
@@ -13,11 +14,20 @@ impl Content {
         match self {
             Content::Posts(posts) => self.view_posts(posts),
             Content::PostDetail(post_detail) => self.view_post_detail(post_detail),
+            Content::Errored(error) => self.view_error(error),
         }
     }
 
+    fn view_error(&self, error: &crate::Error) -> Node<Msg> {
+        div([], [text!("Something went wrong: {:#?}", error)])
+    }
+
     fn view_posts(&self, posts: &[Post]) -> Node<Msg> {
-        ol([], posts.into_iter().map(|post| self.view_post(post)))
+        if posts.is_empty() {
+            div([], [text("There are no posts yet!")])
+        } else {
+            ol([], posts.into_iter().map(|post| self.view_post(post)))
+        }
     }
 
     fn view_post(&self, post: &Post) -> Node<Msg> {

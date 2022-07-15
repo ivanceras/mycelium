@@ -9,12 +9,6 @@ mod content;
 mod fetch;
 mod types;
 
-#[derive(Debug, Clone)]
-enum FetchStatus<T> {
-    Idle,
-    Complete(T),
-}
-
 enum Msg {
     FetchPosts,
     ShowPost(u32),
@@ -22,23 +16,28 @@ enum Msg {
     PostDetailsReceived(PostDetails),
     Errored(Error),
     InitApi(Api),
+    UrlChanged(String),
 }
 
+#[derive(thiserror::Error, Debug)]
 enum Error {
+    #[error("Http Request Error: {0}")]
     RequestError(String),
-    ApiError(String),
+    #[error("Initialization of substrate API failed: {0}")]
+    ApiInitializationError(String),
+    #[error("Item can not be found on the server: {0}")]
     Error404(u32),
 }
 
 struct App {
-    content: FetchStatus<Content>,
+    content: Option<Content>,
     api: Option<Api>,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
-            content: FetchStatus::Idle,
+            content: None,
             api: None,
         }
     }
@@ -55,21 +54,13 @@ impl App {
                         program.dispatch(Msg::InitApi(api));
                     }
                     Err(e) => {
-                        program.dispatch(Msg::Errored(Error::ApiError(e.to_string())));
+                        program
+                            .dispatch(Msg::Errored(Error::ApiInitializationError(e.to_string())));
                     }
                 }
             };
             spawn_local(async_fetch(program))
         })
-    }
-
-    /// run to display the content
-    fn fetch_content(&self) -> Cmd<Self, Msg> {
-        if let FetchStatus::Idle = self.content {
-            self.fetch_posts()
-        } else {
-            Cmd::none()
-        }
     }
 
     fn fetch_posts(&self) -> Cmd<Self, Msg> {
@@ -119,44 +110,73 @@ impl App {
 
     fn view_content(&self) -> Node<Msg> {
         match &self.content {
-            FetchStatus::Idle => p([], [text("Waiting around...")]),
-            FetchStatus::Complete(content) => content.view(),
+            Some(content) => content.view(),
+            None => p([], [text("Waiting around...")]),
         }
     }
 }
 
 impl Application<Msg> for App {
     fn init(&mut self) -> Cmd<Self, Msg> {
+        let mut cmd = Window::add_event_listeners(vec![on_popstate(|_e| {
+            log::trace!("pop_state is triggered in sauron add event listener");
+            let url = sauron::window()
+                .location()
+                .pathname()
+                .expect("must have get a pathname");
+            Msg::UrlChanged(url)
+        })]);
+
         log::info!("Initializing app...");
+
         if self.api.is_none() {
-            self.init_api()
-        } else {
-            Cmd::none()
+            cmd.push(self.init_api());
         }
+        cmd
     }
 
     fn update(&mut self, msg: Msg) -> Cmd<Self, Msg> {
         match msg {
             Msg::InitApi(api) => {
                 self.api = Some(api);
-                self.fetch_content()
+                self.fetch_posts()
             }
+            Msg::FetchPosts => self.fetch_posts(),
             Msg::PostsReceived(posts) => {
                 log::debug!("posts: {:#?}", posts);
-                self.content = FetchStatus::Complete(Content::from(posts));
+                self.content = Some(Content::from(posts));
                 Cmd::none()
             }
             Msg::ShowPost(post_id) => self.fetch_post_details(post_id),
             Msg::PostDetailsReceived(post_detail) => {
-                self.content = FetchStatus::Complete(Content::from(post_detail));
+                self.content = Some(Content::from(post_detail));
                 Cmd::none()
             }
-            _ => Cmd::none(),
+            Msg::UrlChanged(url) => Cmd::none(),
+            Msg::Errored(error) => {
+                self.content = Some(Content::from(error));
+                Cmd::none()
+            }
         }
     }
 
     fn view(&self) -> Node<Msg> {
-        div([], [text("hello polywrap"), self.view_content()])
+        main(
+            [],
+            [
+                header(
+                    [],
+                    [a(
+                        [on_click(|e| {
+                            e.prevent_default();
+                            Msg::FetchPosts
+                        })],
+                        [div([class("logo")], [text("Y")])],
+                    )],
+                ),
+                self.view_content(),
+            ],
+        )
     }
 }
 
@@ -176,7 +196,7 @@ async fn start() -> anyhow::Result<()> {
     Ok(())
 }
 #[wasm_bindgen(start)]
-pub async fn main() {
+pub async fn startup() {
     console_log::init_with_level(log::Level::Trace).ok();
     console_error_panic_hook::set_once();
     log::info!("Starting");
