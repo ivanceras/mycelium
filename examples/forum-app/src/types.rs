@@ -32,7 +32,7 @@ pub struct Comment {
     pub comment_id: u32,
     pub content: BoundedVec<u8, MaxContentLength>,
     pub author: AccountId32,
-    pub parent_item: Option<u32>,
+    pub parent_item: u32,
 }
 impl Comment {
     pub fn content(&self) -> Cow<'_, str> {

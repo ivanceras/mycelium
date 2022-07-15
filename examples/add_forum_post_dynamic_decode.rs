@@ -1,6 +1,6 @@
 //! Calling function from a custom pallet and using types that are redefinition to disconnect from
 //! encoding
-#![deny(warnings)]
+#![allow(warnings)]
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use frame_support::pallet_prelude::ConstU32;
@@ -33,7 +33,7 @@ pub struct Comment {
     comment_id: u32,
     content: BoundedVec<u8, MaxContentLength>,
     author: AccountId32,
-    parent_item: Option<u32>,
+    parent_item: u32,
 }
 
 #[derive(Encode, Decode, Debug)]
@@ -48,39 +48,19 @@ struct PostDetails {
     comments: Vec<CommentDetails>,
 }
 
+fn sleep(s: u64) {
+    thread::sleep(time::Duration::from_millis(s * 1_000));
+}
+
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
     let from: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
 
     let api = Api::new("http://localhost:9933").await?;
 
-    let pallet = api.metadata().pallet("ForumModule")?;
-    let call_index = pallet
-        .calls
-        .get("post_content")
-        .expect("unable to find function");
+    let last_post_id = add_post(&api, "Hello world!1111", &from).await?;
 
-    let bounded_content = BoundedVec::try_from(b"Hello world post!".to_vec()).unwrap();
-
-    let call = ([pallet.index, *call_index], bounded_content);
-    let result = api.execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip,
-            ([u8; 2], BoundedVec<u8, MaxContentLength>),
-            >(Some(from.clone()), call, None, None).await?;
-    println!("result: {:?}", result);
-
-    thread::sleep(time::Duration::from_millis(5_000));
-
-    let current_item: Option<Vec<u8>> = api
-        .fetch_opaque_storage_value("ForumModule", "ItemCounter")
-        .await?;
-
-    let current_item: Option<u32> =
-        current_item.map(|v| Decode::decode(&mut v.as_slice()).expect("must not error"));
-
-    println!("current item: {:?}", current_item);
-    let current_item = current_item.unwrap();
-
-    let last_post_id = current_item.saturating_sub(1);
+    sleep(5);
 
     let inserted_post: Option<Vec<u8>> = api
         .fetch_opaque_storage_map("ForumModule", "AllPosts", last_post_id)
@@ -93,27 +73,38 @@ async fn main() -> Result<(), mycelium::Error> {
         println!("posted content: {:?}", posted_content);
     }
 
-    thread::sleep(time::Duration::from_millis(10_000));
+    sleep(5);
 
-    add_comment_to(
+    let item1 = add_comment_to(
         &api,
         last_post_id,
         "This is a comment to Hello world!",
-        from.clone(),
+        &from,
     )
     .await?;
 
-    thread::sleep(time::Duration::from_millis(10_000));
+    sleep(5);
 
-    add_comment_to(
+    let item2 = add_comment_to(
         &api,
         last_post_id,
         "This is a 2nd comment to the Hello world!",
-        from,
+        &from,
+    )
+    .await?;
+    println!("item2: {}", item2);
+
+    sleep(5);
+
+    let item3 = add_comment_to(
+        &api,
+        item2,
+        "This is a comment to the 2nd comment to the Hello world post!",
+        &from,
     )
     .await?;
 
-    thread::sleep(time::Duration::from_millis(10_000));
+    sleep(5);
 
     if let Some(post_comments) = api
         .fetch_opaque_storage_map("ForumModule", "Kids", last_post_id)
@@ -125,7 +116,7 @@ async fn main() -> Result<(), mycelium::Error> {
         dbg!(post_comments);
     }
 
-    thread::sleep(time::Duration::from_millis(5_000));
+    sleep(5);
 
     let post_details = get_post_details(&api, last_post_id).await?;
     dbg!(post_details);
@@ -133,22 +124,72 @@ async fn main() -> Result<(), mycelium::Error> {
     let all_posts = get_all_posts(&api).await?;
     dbg!(all_posts);
 
+    let kids: Option<Vec<Vec<u8>>> = api
+        .fetch_opaque_storage_map_paged("ForumModule", "Kids", 10, None::<u32>)
+        .await?;
+    dbg!(kids);
+    /*
+    if let Some(kids) = kids {
+        for (i, kid) in kids.into_iter().enumerate() {
+            let kid: Option<BoundedVec<u32, MaxComments>> = Decode::decode(&mut kid.as_slice())
+                .ok()
+                .expect("must decode");
+            println!("kid[{}]: {:?}", i, kid);
+        }
+    }
+    */
+
     Ok(())
+}
+
+async fn add_post(api: &Api, post: &str, author: &Pair) -> Result<u32, mycelium::Error> {
+    let pallet = api.metadata().pallet("ForumModule")?;
+    let call_index = pallet
+        .calls
+        .get("post_content")
+        .expect("unable to find function");
+
+    let bounded_content = BoundedVec::try_from(post.as_bytes().to_vec()).unwrap();
+    let call = ([pallet.index, *call_index], bounded_content);
+
+    let current_item = get_current_item(api).await?;
+
+    let result = api.execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip,
+            ([u8; 2], BoundedVec<u8, MaxContentLength>),
+            >(Some(author.clone()), call, None, None).await?;
+    println!("result: {:?}", result);
+    Ok(current_item)
+}
+
+/// Warning this is an approximation value, since
+/// there could another extrinsic call to the forum module to increment it while
+/// this is executing in between the function calls in the following intended extrinsics
+async fn get_current_item(api: &Api) -> Result<u32, mycelium::Error> {
+    let current_item: Option<Vec<u8>> = api
+        .fetch_opaque_storage_value("ForumModule", "ItemCounter")
+        .await?;
+
+    let current_item: Option<u32> =
+        current_item.map(|v| Decode::decode(&mut v.as_slice()).expect("must not error"));
+    Ok(current_item.unwrap_or(0))
 }
 
 async fn add_comment_to(
     api: &Api,
-    post_id: u32,
+    parent_item: u32,
     comment: &str,
-    author: Pair,
-) -> Result<(), mycelium::Error> {
+    author: &Pair,
+) -> Result<u32, mycelium::Error> {
     let pallet = api.metadata().pallet("ForumModule")?;
     let call_index = pallet.calls.get("comment_on").unwrap();
     let bounded_comment = BoundedVec::try_from(comment.as_bytes().to_vec()).unwrap();
-    let call = ([pallet.index, *call_index], post_id, None, bounded_comment);
+    let call = ([pallet.index, *call_index], parent_item, bounded_comment);
+
+    let current_item = get_current_item(api).await?;
+
     let result = api
-        .execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip, ([u8;2], u32, Option<u32>, BoundedVec<u8, MaxContentLength>)>(
-            Some(author),
+        .execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip, ([u8;2], u32, BoundedVec<u8, MaxContentLength>)>(
+            Some(author.clone()),
             call,
             None,
             None,
@@ -156,7 +197,7 @@ async fn add_comment_to(
         .await?;
 
     println!("comment result: {:?}", result);
-    Ok(())
+    Ok(current_item)
 }
 
 async fn get_post_details(api: &Api, post_id: u32) -> Result<Option<PostDetails>, mycelium::Error> {
@@ -212,8 +253,10 @@ async fn get_kids(
         .await?
     {
         let kids: Option<BoundedVec<u32, MaxComments>> = Decode::decode(&mut kids.as_slice()).ok();
+        println!("kids of item: {} are: {:?}", item_id, kids);
         Ok(kids)
     } else {
+        println!("There is no kid for {}", item_id);
         Ok(None)
     }
 }

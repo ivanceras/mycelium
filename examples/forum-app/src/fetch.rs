@@ -38,29 +38,6 @@ pub async fn get_all_posts(api: &Api) -> Result<Vec<Post>, mycelium::Error> {
     Ok(all_post)
 }
 
-pub async fn add_comment_to(
-    api: &Api,
-    post_id: u32,
-    comment: &str,
-    author: Pair,
-) -> Result<(), mycelium::Error> {
-    let pallet = api.metadata().pallet(FORUM_MODULE)?;
-    let call_index = pallet.calls.get("comment_on").unwrap();
-    let bounded_comment = BoundedVec::try_from(comment.as_bytes().to_vec()).unwrap();
-    let call = ([pallet.index, *call_index], post_id, None, bounded_comment);
-    let result = api
-        .execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip, ([u8;2], u32, Option<u32>, BoundedVec<u8, MaxContentLength>)>(
-            Some(author),
-            call,
-            None,
-            None,
-        )
-        .await?;
-
-    log::info!("comment result: {:?}", result);
-    Ok(())
-}
-
 pub async fn get_post_details(
     api: &Api,
     post_id: u32,
@@ -112,7 +89,9 @@ pub async fn get_comment_replies(
 ) -> Result<Vec<CommentDetails>, mycelium::Error> {
     let mut comment_details = vec![];
     if let Some(kids) = get_kids(api, item_id).await? {
+        log::info!("kids of item_id: {} are: {:?}", item_id, kids);
         for kid in kids {
+            log::info!("getting comment: {}", kid);
             let comment = get_comment(api, kid)
                 .await?
                 .expect("must have a comment entry");
