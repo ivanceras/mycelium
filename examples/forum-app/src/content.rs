@@ -43,6 +43,7 @@ pub struct Post {
     pub content: BoundedVec<u8, MaxContentLength>,
     pub author: AccountId32,
     pub timestamp: u64,
+    pub block_number: u32,
 }
 
 #[derive(Encode, Decode, Debug)]
@@ -52,6 +53,7 @@ pub struct Comment {
     pub author: AccountId32,
     pub parent_item: u32,
     pub timestamp: u64,
+    pub block_number: u32,
 }
 
 impl PostDetail {
@@ -66,6 +68,9 @@ impl PostDetail {
     }
     fn time_ago(&self) -> String {
         self.post.time_ago()
+    }
+    fn block_number(&self) -> u32 {
+        self.post.block_number
     }
 }
 
@@ -141,8 +146,36 @@ impl Content {
                 div(
                     [class("post-detail-stats")],
                     [
-                        a([], [text!("by: {}", post_detail.author())]),
-                        a([], [text!("{} ago", post_detail.time_ago())]),
+                        a(
+                            [
+                                href(post_detail.link()),
+                                on_click(move |e| {
+                                    e.prevent_default();
+                                    Msg::ShowPost(post_id)
+                                }),
+                            ],
+                            [text!("by: {}", post_detail.author())],
+                        ),
+                        a(
+                            [
+                                href(post_detail.link()),
+                                on_click(move |e| {
+                                    e.prevent_default();
+                                    Msg::ShowPost(post_id)
+                                }),
+                            ],
+                            [text!("at: {}", post_detail.block_number())],
+                        ),
+                        a(
+                            [
+                                href(post_detail.link()),
+                                on_click(move |e| {
+                                    e.prevent_default();
+                                    Msg::ShowPost(post_id)
+                                }),
+                            ],
+                            [text!("{} ago", post_detail.time_ago())],
+                        ),
                         a(
                             [
                                 href(post_detail.link()),
@@ -211,6 +244,7 @@ impl Content {
                     [class("comment-stats")],
                     [
                         a([], [text!("by: {}", comment.author())]),
+                        a([], [text!("at: {}", comment.block_number)]),
                         a([], [text!("{} ago", comment.time_ago())]),
                     ],
                 ),

@@ -26,6 +26,8 @@ struct Post {
     post_id: u32,
     content: BoundedVec<u8, MaxContentLength>,
     author: AccountId32,
+    timestamp: u64,
+    block_number: u32,
 }
 
 #[derive(Encode, Decode, Debug)]
@@ -34,6 +36,8 @@ pub struct Comment {
     content: BoundedVec<u8, MaxContentLength>,
     author: AccountId32,
     parent_item: u32,
+    timestamp: u64,
+    block_number: u32,
 }
 
 #[derive(Encode, Decode, Debug)]
@@ -56,11 +60,12 @@ fn sleep(s: u64) {
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
-    let from: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
+    let alice: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
+    let bob: sp_core::sr25519::Pair = AccountKeyring::Bob.pair();
 
     let api = Api::new("http://localhost:9933").await?;
 
-    let last_post_id = add_post(&api, "Hello world!1111", &from).await?;
+    let last_post_id = add_post(&api, "Hello world!1111", &alice).await?;
 
     sleep(DELAY);
 
@@ -70,7 +75,7 @@ async fn main() -> Result<(), mycelium::Error> {
 
     println!("inserted-post: {:#?}", inserted_post);
     if let Some(inserted_post) = inserted_post {
-        let inserted_post = Post::decode(&mut inserted_post.as_slice()).expect("must not error");
+        let inserted_post = Post::decode(&mut inserted_post.as_slice())?;
         let posted_content = String::from_utf8_lossy(&inserted_post.content);
         println!("posted content: {:?}", posted_content);
     }
@@ -81,7 +86,7 @@ async fn main() -> Result<(), mycelium::Error> {
         &api,
         last_post_id,
         "This is a comment to Hello world!",
-        &from,
+        &alice,
     )
     .await?;
 
@@ -91,7 +96,7 @@ async fn main() -> Result<(), mycelium::Error> {
         &api,
         last_post_id,
         "This is a 2nd comment to the Hello world!",
-        &from,
+        &bob,
     )
     .await?;
     println!("item2: {}", item2);
@@ -102,7 +107,7 @@ async fn main() -> Result<(), mycelium::Error> {
         &api,
         item2,
         "This is a comment to the 2nd comment to the Hello world post!",
-        &from,
+        &alice,
     )
     .await?;
 
@@ -112,8 +117,8 @@ async fn main() -> Result<(), mycelium::Error> {
         .fetch_opaque_storage_map("ForumModule", "Kids", last_post_id)
         .await?
     {
-        let post_comments: Option<BoundedVec<u32, MaxComments>> =
-            Decode::decode(&mut post_comments.as_slice()).ok();
+        let post_comments: BoundedVec<u32, MaxComments> =
+            Decode::decode(&mut post_comments.as_slice())?;
 
         dbg!(post_comments);
     }
@@ -167,9 +172,14 @@ async fn get_current_item(api: &Api) -> Result<u32, mycelium::Error> {
         .fetch_opaque_storage_value("ForumModule", "ItemCounter")
         .await?;
 
-    let current_item: Option<u32> =
-        current_item.map(|v| Decode::decode(&mut v.as_slice()).expect("must not error"));
-    Ok(current_item.unwrap_or(0))
+    if let Some(current_item) = current_item {
+        let current_item = Decode::decode(&mut current_item.as_slice())?;
+        Ok(current_item)
+    } else {
+        println!("There is no current item yet..");
+        eprintln!("There is no current item");
+        Ok(0)
+    }
 }
 
 async fn add_comment_to(
@@ -221,10 +231,8 @@ async fn get_all_posts(api: &Api) -> Result<Vec<Post>, mycelium::Error> {
         .await?;
     if let Some(storage_values) = storage_values {
         for bytes in storage_values.into_iter() {
-            let post: Option<Post> = Post::decode(&mut bytes.as_slice()).ok();
-            if let Some(post) = post {
-                all_post.push(post);
-            }
+            let post: Post = Post::decode(&mut bytes.as_slice())?;
+            all_post.push(post);
         }
     }
     Ok(all_post)
@@ -235,8 +243,8 @@ async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post>, mycelium::Err
         .fetch_opaque_storage_map("ForumModule", "AllPosts", post_id)
         .await?
     {
-        let post: Option<Post> = Post::decode(&mut post.as_slice()).ok();
-        Ok(post)
+        let post: Post = Post::decode(&mut post.as_slice())?;
+        Ok(Some(post))
     } else {
         Ok(None)
     }
@@ -250,9 +258,9 @@ async fn get_kids(
         .fetch_opaque_storage_map("ForumModule", "Kids", item_id)
         .await?
     {
-        let kids: Option<BoundedVec<u32, MaxComments>> = Decode::decode(&mut kids.as_slice()).ok();
+        let kids: BoundedVec<u32, MaxComments> = Decode::decode(&mut kids.as_slice())?;
         println!("kids of item: {} are: {:?}", item_id, kids);
-        Ok(kids)
+        Ok(Some(kids))
     } else {
         println!("There is no kid for {}", item_id);
         Ok(None)
@@ -288,8 +296,8 @@ async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, myce
         .fetch_opaque_storage_map("ForumModule", "AllComments", comment_id)
         .await?
     {
-        let comment: Option<Comment> = Decode::decode(&mut comment.as_slice()).ok();
-        Ok(comment)
+        let comment: Comment = Decode::decode(&mut comment.as_slice())?;
+        Ok(Some(comment))
     } else {
         Ok(None)
     }
