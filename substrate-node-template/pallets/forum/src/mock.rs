@@ -19,6 +19,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage},
 		ForumModule: pallet_forum::{Pallet, Call, Storage, Event<T>},
 	}
 );
@@ -54,6 +55,14 @@ impl pallet_forum::Config for Test {
 	type Event = Event;
 	type MaxContentLength = ConstU32<280>;
 	type MaxComments = ConstU32<1000>;
+}
+
+impl pallet_timestamp::Config for Test {
+	/// A timestamp: milliseconds since the unix epoch.
+	type Moment = u64;
+	type OnTimestampSet = ();
+	type MinimumPeriod = ();
+	type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.

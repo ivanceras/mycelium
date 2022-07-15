@@ -23,7 +23,7 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_timestamp::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
@@ -99,7 +99,10 @@ pub mod pallet {
 			// use the total number of items as post_id
 			let post_id = ItemCounter::<T>::get();
 
-			AllPosts::<T>::insert(post_id, Post::new(post_id, content, who.clone()));
+			AllPosts::<T>::insert(
+				post_id,
+				Post { post_id, content, timestamp: Self::timestamp(), author: who.clone() },
+			);
 			// increment the item counter
 			Self::increment_item_counter();
 			// Emit a PostSubmitted event
@@ -121,6 +124,9 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		pub fn timestamp() -> T::Moment {
+			pallet_timestamp::Pallet::<T>::get()
+		}
 		/// increment th ItemCounter storage value
 		fn increment_item_counter() {
 			ItemCounter::<T>::mutate(|i| {
@@ -137,7 +143,13 @@ pub mod pallet {
 			let comment_id = ItemCounter::<T>::get();
 			AllComments::<T>::insert(
 				comment_id,
-				Comment::new(comment_id, content.clone(), who.clone(), parent_item),
+				Comment {
+					comment_id,
+					content,
+					author: who.clone(),
+					parent_item,
+					timestamp: Self::timestamp(),
+				},
 			);
 			Self::increment_item_counter();
 

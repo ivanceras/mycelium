@@ -17,7 +17,10 @@ fn it_works_posting_content() {
 		println!("post: {:#?}", ForumModule::post(0));
 		assert_eq!(current_item, 0);
 
-		assert_eq!(ForumModule::get_post(0), Some(Post::new(0, content, 1000)));
+		assert_eq!(
+			ForumModule::get_post(0),
+			Some(Post { post_id: 0, content, author: 1000, timestamp: ForumModule::timestamp() })
+		);
 
 		let comment1 = BoundedVec::try_from(b"I'm 1st comment".to_vec()).unwrap();
 
@@ -50,11 +53,21 @@ fn it_works_posting_content() {
 		));
 		assert_eq!(item4, 4);
 
-		assert_eq!(ForumModule::comment(1), Some(Comment::new(1, comment1, 2000, 0)));
+		assert_eq!(
+			ForumModule::comment(1),
+			Some(Comment {
+				comment_id: 1,
+				content: comment1,
+				author: 2000,
+				parent_item: 0,
+				timestamp: ForumModule::timestamp()
+			})
+		);
 		assert_eq!(ForumModule::kids(0), Some(BoundedVec::try_from(vec![1, 2]).unwrap()));
 		assert_eq!(ForumModule::kids(1), Some(BoundedVec::try_from(vec![3]).unwrap()));
 		assert_eq!(ForumModule::kids(2), Some(BoundedVec::try_from(vec![4]).unwrap()));
 
-		assert_eq!(Post::<Test>::max_encoded_len(), 294);
+		assert_eq!(Post::<Test>::max_encoded_len(), 302);
+		assert_eq!(Comment::<Test>::max_encoded_len(), 306);
 	});
 }
