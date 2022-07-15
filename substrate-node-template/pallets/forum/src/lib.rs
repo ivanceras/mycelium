@@ -67,8 +67,8 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A post is submitted with post_id, and the author
 		PostSubmitted(u32, T::AccountId),
-		/// A comment is submmited with (post_id, comment_id and the author)
-		CommentSubmitted(u32, u32, T::AccountId),
+		/// A comment is submmited with comment_id and the author)
+		CommentSubmitted(u32, T::AccountId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -111,12 +111,11 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn comment_on(
 			origin: OriginFor<T>,
-			post_id: u32,
-			parent_comment: Option<u32>,
+			parent_item: u32,
 			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::add_comment_to(who.clone(), post_id, parent_comment, content)?;
+			Self::add_comment_to(who.clone(), parent_item, content)?;
 			Ok(())
 		}
 	}
@@ -131,32 +130,29 @@ pub mod pallet {
 
 		pub fn add_comment_to(
 			who: T::AccountId,
-			post_id: u32,
-			parent_comment: Option<u32>,
+			parent_item: u32,
 			content: BoundedVec<u8, T::MaxContentLength>,
 		) -> DispatchResult {
 			log::warn!("adding comment to..");
 			let comment_id = ItemCounter::<T>::get();
 			AllComments::<T>::insert(
 				comment_id,
-				Comment::new(comment_id, content.clone(), who.clone(), parent_comment),
+				Comment::new(comment_id, content.clone(), who.clone(), parent_item),
 			);
 			Self::increment_item_counter();
-			let parent_item =
-				if let Some(parent_comment) = parent_comment { parent_comment } else { post_id };
 
 			if Kids::<T>::contains_key(parent_item) {
-				log::info!("adding comment to {}", parent_item);
+				log::info!("adding comment: {} to parent: {}", comment_id, parent_item);
 				Kids::<T>::mutate(parent_item, |i| {
 					if let Some(i) = i {
 						i.try_push(comment_id).unwrap();
 					}
 				});
 			} else {
-				log::info!("inserting a new comment: {} for post: {}", comment_id, post_id);
+				log::info!("inserting as a new kid entry: {} -> {}", parent_item, comment_id);
 				Kids::<T>::insert(parent_item, BoundedVec::try_from(vec![comment_id]).unwrap());
 			}
-			Self::deposit_event(Event::CommentSubmitted(post_id, comment_id, who));
+			Self::deposit_event(Event::CommentSubmitted(comment_id, who));
 			Ok(())
 		}
 

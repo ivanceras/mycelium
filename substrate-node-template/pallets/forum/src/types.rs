@@ -40,12 +40,12 @@ pub struct Comment<T: Config> {
 	comment_id: u32,
 	content: BoundedVec<u8, T::MaxContentLength>,
 	author: T::AccountId,
-	parent_item: Option<u32>,
+	parent_item: u32,
 }
 
 impl<T: Config> MaxEncodedLen for Comment<T> {
 	fn max_encoded_len() -> usize {
-		<(u32, BoundedVec<u8, T::MaxContentLength>, T::AccountId, Option<u32>)>::max_encoded_len()
+		<(u32, BoundedVec<u8, T::MaxContentLength>, T::AccountId, u32)>::max_encoded_len()
 	}
 }
 
@@ -54,7 +54,7 @@ impl<T: Config> Comment<T> {
 		comment_id: u32,
 		content: BoundedVec<u8, T::MaxContentLength>,
 		author: T::AccountId,
-		parent_item: Option<u32>,
+		parent_item: u32,
 	) -> Self {
 		Self { comment_id, content, author, parent_item }
 	}

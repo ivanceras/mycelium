@@ -1,46 +1,59 @@
-use crate::pallet;
+use crate::mock::*;
 use crate::Comment;
 use crate::Post;
-use crate::{mock::*, Error};
 use codec::MaxEncodedLen;
-use frame_support::BoundedSlice;
+use frame_support::assert_ok;
 use frame_support::BoundedVec;
-use frame_support::{assert_noop, assert_ok};
 
 #[test]
 fn it_works_posting_content() {
 	new_test_ext().execute_with(|| {
 		// Dispatch a signed extrinsic.
 		let content = BoundedVec::try_from(b"hello".to_vec()).unwrap();
-		// item 0
-		assert_ok!(ForumModule::post_content(Origin::signed(1), content.clone()));
+		let current_item = ForumModule::item_counter();
+		assert_eq!(current_item, 0);
+		assert_ok!(ForumModule::post_content(Origin::signed(1000), content.clone()));
 		// Read pallet storage and assert an expected result.
 		println!("post: {:#?}", ForumModule::post(0));
-		assert_eq!(ForumModule::item_counter(), 1);
+		assert_eq!(current_item, 0);
 
-		assert_eq!(ForumModule::get_post(0), Some(Post::new(0, content, 1)));
+		assert_eq!(ForumModule::get_post(0), Some(Post::new(0, content, 1000)));
 
-		let comment = BoundedVec::try_from(b"I'm a comment".to_vec()).unwrap();
-		assert_ok!(ForumModule::comment_on(Origin::signed(2), 0, None, comment.clone()));
+		let comment1 = BoundedVec::try_from(b"I'm 1st comment".to_vec()).unwrap();
 
+		let item1 = ForumModule::item_counter();
+		assert_ok!(ForumModule::comment_on(Origin::signed(2000), 0, comment1.clone()));
+		assert_eq!(item1, 1);
+
+		let item2 = ForumModule::item_counter();
 		assert_ok!(ForumModule::comment_on(
-			Origin::signed(2),
+			Origin::signed(2000),
 			0,
-			None,
-			BoundedVec::try_from(b"This is a second comment".to_vec()).unwrap()
+			BoundedVec::try_from(b"This is a 2nd comment".to_vec()).unwrap()
 		));
 
+		assert_eq!(item2, 2);
+
+		let item3 = ForumModule::item_counter();
 		assert_ok!(ForumModule::comment_on(
-			Origin::signed(3),
+			Origin::signed(3000),
 			1,
-			None,
-			BoundedVec::try_from(b"> I'm a comment \nThis".to_vec()).unwrap()
+			BoundedVec::try_from(b"> I'm a comment  to the 1st comment \nThis".to_vec()).unwrap()
 		));
+		assert_eq!(item3, 3);
 
-		assert_eq!(ForumModule::comment(1), Some(Comment::new(1, comment, 2, None)));
+		let item4 = ForumModule::item_counter();
+		assert_ok!(ForumModule::comment_on(
+			Origin::signed(3000),
+			2,
+			BoundedVec::try_from(b"I'm a comment for the 2nd comment".to_vec()).unwrap()
+		));
+		assert_eq!(item4, 4);
+
+		assert_eq!(ForumModule::comment(1), Some(Comment::new(1, comment1, 2000, 0)));
 		assert_eq!(ForumModule::kids(0), Some(BoundedVec::try_from(vec![1, 2]).unwrap()));
 		assert_eq!(ForumModule::kids(1), Some(BoundedVec::try_from(vec![3]).unwrap()));
-		assert_eq!(ForumModule::kids(2), None);
+		assert_eq!(ForumModule::kids(2), Some(BoundedVec::try_from(vec![4]).unwrap()));
 
 		assert_eq!(Post::<Test>::max_encoded_len(), 294);
 	});
