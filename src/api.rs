@@ -13,6 +13,7 @@ mod storage_api;
 
 /// A more complex Api which requires prefetching some fields such as Metadata, genesis_hash and
 /// runtime version
+#[derive(Clone)]
 pub struct Api {
     base_api: BaseApi,
     metadata: Metadata,

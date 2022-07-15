@@ -25,6 +25,7 @@ pub struct JsonResult {
 
 /// This api doesn't need Metadata, Runtime version to work
 /// It just fetch the content right away
+#[derive(Clone)]
 pub struct BaseApi {
     /// the url of the substrate node we are running the rpc call from
     url: String,
