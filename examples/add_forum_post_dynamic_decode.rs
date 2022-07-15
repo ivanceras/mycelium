@@ -48,6 +48,8 @@ struct PostDetails {
     comments: Vec<CommentDetails>,
 }
 
+const DELAY: u64 = 3; // in seconds
+
 fn sleep(s: u64) {
     thread::sleep(time::Duration::from_millis(s * 1_000));
 }
@@ -60,7 +62,7 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let last_post_id = add_post(&api, "Hello world!1111", &from).await?;
 
-    sleep(5);
+    sleep(DELAY);
 
     let inserted_post: Option<Vec<u8>> = api
         .fetch_opaque_storage_map("ForumModule", "AllPosts", last_post_id)
@@ -73,7 +75,7 @@ async fn main() -> Result<(), mycelium::Error> {
         println!("posted content: {:?}", posted_content);
     }
 
-    sleep(5);
+    sleep(DELAY);
 
     let item1 = add_comment_to(
         &api,
@@ -83,7 +85,7 @@ async fn main() -> Result<(), mycelium::Error> {
     )
     .await?;
 
-    sleep(5);
+    sleep(DELAY);
 
     let item2 = add_comment_to(
         &api,
@@ -94,7 +96,7 @@ async fn main() -> Result<(), mycelium::Error> {
     .await?;
     println!("item2: {}", item2);
 
-    sleep(5);
+    sleep(DELAY);
 
     let item3 = add_comment_to(
         &api,
@@ -104,7 +106,7 @@ async fn main() -> Result<(), mycelium::Error> {
     )
     .await?;
 
-    sleep(5);
+    sleep(DELAY);
 
     if let Some(post_comments) = api
         .fetch_opaque_storage_map("ForumModule", "Kids", last_post_id)
@@ -116,7 +118,7 @@ async fn main() -> Result<(), mycelium::Error> {
         dbg!(post_comments);
     }
 
-    sleep(5);
+    sleep(DELAY);
 
     let post_details = get_post_details(&api, last_post_id).await?;
     dbg!(post_details);
@@ -127,17 +129,13 @@ async fn main() -> Result<(), mycelium::Error> {
     let kids: Option<Vec<Vec<u8>>> = api
         .fetch_opaque_storage_map_paged("ForumModule", "Kids", 10, None::<u32>)
         .await?;
-    dbg!(kids);
-    /*
+    dbg!(&kids);
     if let Some(kids) = kids {
         for (i, kid) in kids.into_iter().enumerate() {
-            let kid: Option<BoundedVec<u32, MaxComments>> = Decode::decode(&mut kid.as_slice())
-                .ok()
-                .expect("must decode");
+            let kid: Result<BoundedVec<u32, MaxComments>, _> = Decode::decode(&mut kid.as_slice());
             println!("kid[{}]: {:?}", i, kid);
         }
     }
-    */
 
     Ok(())
 }
