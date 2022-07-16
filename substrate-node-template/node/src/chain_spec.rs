@@ -3,6 +3,7 @@ use node_template_runtime::{
 	SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
+use sc_service::Properties;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -39,6 +40,9 @@ pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
 pub fn development_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
+	let mut properties = Properties::new();
+	properties.insert("tokenSymbol".into(), "CAP".into());
+
 	Ok(ChainSpec::from_genesis(
 		// Name
 		"Development",
@@ -70,7 +74,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		None,
 		None,
 		// Properties
-		None,
+		Some(properties),
 		// Extensions
 		None,
 	))
