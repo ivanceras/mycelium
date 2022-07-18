@@ -6,6 +6,7 @@ async fn main() -> Result<(), mycelium::Error> {
     let api = Api::new("http://localhost:9933").await?;
     let metadata: &Metadata = api.metadata();
     println!("metadata: {:#?}", metadata);
+    println!("runtime version: {:#?}", api.runtime_version());
     let storage_type = metadata.storage_value_type("TemplateModule", "Something");
     println!(
         "storage type of TemplateModule::Something: {:?}",

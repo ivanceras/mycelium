@@ -1,5 +1,5 @@
 //! This example get the values from the storage items from their respective pallets
-#![deny(warnings)]
+#![allow(warnings)]
 use mycelium::sp_core::crypto::AccountId32;
 use mycelium::Api;
 use pallet_balances::AccountData;
@@ -16,10 +16,16 @@ async fn main() -> Result<(), mycelium::Error> {
         api.fetch_storage_value("Balances", "TotalIssuance").await;
     println!("total issuance: {:?}", total_issuance);
 
-    let account_id: AccountId32 = AccountKeyring::Bob.to_account_id();
-    let account_balance: Result<Option<AccountData<u128>>, _> = api
+    let account_id: AccountId32 = AccountKeyring::Alice.to_account_id();
+    let account_balance: Result<Option<u128>, _> = api
         .fetch_storage_map("Balances", "Account", account_id)
         .await;
+
     println!("account_balance: {:?}", account_balance);
+
+    let paged: Result<Option<Vec<Vec<u8>>>, _> = api
+        .fetch_opaque_storage_map_paged("Balances", "Reserves", 10, None::<AccountId32>)
+        .await;
+    println!("paged: {:?}", paged);
     Ok(())
 }
