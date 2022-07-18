@@ -14,6 +14,8 @@ async fn main() -> Result<(), mycelium::Error> {
         codec::Decode::decode(&mut existential_deposit.as_slice());
     dbg!(existential_deposit);
 
+    dbg!(api.fetch_constant_type("Balances", "ExistentialDeposit")?);
+
     let max_reserves = api.fetch_constant_opaque_value("Balances", "MaxReserves")?;
     let max_reserves: Result<u32, _> = codec::Decode::decode(&mut max_reserves.as_slice());
     dbg!(max_reserves);

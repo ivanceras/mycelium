@@ -23,6 +23,27 @@ async fn main() -> Result<(), mycelium::Error> {
 
     println!("account_balance: {:?}", account_balance);
 
+    let storage_type = api
+        .metadata()
+        .storage_value_type("TemplateModule", "Something");
+    println!(
+        "storage type of TemplateModule::Something: {:?}",
+        storage_type
+    );
+    let total_issuance_type = api
+        .metadata()
+        .storage_value_type("Balances", "TotalIssuance");
+    println!(
+        "storage type of Balances::TotalIssuance: {:?}",
+        total_issuance_type
+    );
+
+    let account_balance_type = api.metadata().storage_map_type("Balances", "Account");
+    println!(
+        "storage type of Balances::Account: {:#?}",
+        account_balance_type
+    );
+
     let paged: Result<Option<Vec<Vec<u8>>>, _> = api
         .fetch_opaque_storage_map_paged("Balances", "Reserves", 10, None::<AccountId32>)
         .await;
