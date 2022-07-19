@@ -16,6 +16,11 @@ async fn main() -> Result<(), mycelium::Error> {
         api.fetch_storage_value("Balances", "TotalIssuance").await;
     println!("total issuance: {:?}", total_issuance);
 
+    dbg!(
+        api.fetch_opaque_storage_value("Balances", "TotalIssuance")
+            .await?
+    );
+
     let account_id: AccountId32 = AccountKeyring::Alice.to_account_id();
     let account_balance: Result<Option<u128>, _> = api
         .fetch_storage_map("Balances", "Account", account_id)
@@ -43,6 +48,12 @@ async fn main() -> Result<(), mycelium::Error> {
         "storage type of Balances::Account: {:#?}",
         account_balance_type
     );
+
+    if let Some((key_type, value_type)) =
+        api.metadata().storage_map_type("ForumModule", "AllPosts")?
+    {
+        println!("type of ForumModule AllPosts key: {:#?}", key_type);
+    }
 
     let paged: Result<Option<Vec<Vec<u8>>>, _> = api
         .fetch_opaque_storage_map_paged("Balances", "Reserves", 10, None::<AccountId32>)
