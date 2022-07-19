@@ -1,5 +1,7 @@
 use crate::{api::Api, utils::FromHexStr, Error};
 use codec::{Decode, Encode};
+use scale_info::form::PortableForm;
+use scale_info::Type;
 use sp_core::storage::StorageKey;
 
 impl Api {
@@ -146,6 +148,14 @@ impl Api {
         }
     }
 
+    pub fn storage_map_type(
+        &self,
+        module: &str,
+        storage_name: &str,
+    ) -> Result<Option<(&Type<PortableForm>, &Type<PortableForm>)>, Error> {
+        Ok(self.metadata().storage_map_type(module, storage_name)?)
+    }
+
     pub async fn fetch_opaque_storage_keys_paged<K>(
         &self,
         module: &str,
@@ -191,35 +201,3 @@ impl Api {
         }
     }
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn show_total_balance_total_issuance() {
-        let api = Api::new("http://localhost:9933")
-            .await
-            .expect("must not error");
-        let result: Result<Option<u128>, Error> =
-            api.fetch_storage_value("Balances", "TotalIssuance").await;
-        println!("result: {:?}", result);
-        assert!(result.is_ok());
-        let result = result.ok().flatten().unwrap();
-        // only succeed when the substrate node is fresh or unmodified
-        assert_eq!(result, 4611686018427387904);
-    }
-
-    #[tokio::test]
-    async fn show_template_module() {
-        let api = Api::new("http://localhost:9933")
-            .await
-            .expect("must not error");
-        let result: Result<Option<u32>, Error> =
-            api.fetch_storage_value("TemplateModule", "Something").await;
-        println!("result: {:?}", result);
-        assert!(result.is_ok());
-    }
-}
-*/
