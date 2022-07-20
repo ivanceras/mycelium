@@ -122,9 +122,13 @@ pub async fn get_comment_replies(
                 .expect("must have a comment entry");
 
             let kid_comments = get_comment_replies(api, kid).await?;
+            let block_hash = get_block_hash(api, comment.block_number)
+                .await?
+                .expect("must have a block hash");
             comment_details.push(CommentDetail {
                 comment,
                 kids: kid_comments,
+                block_hash,
             });
         }
     }

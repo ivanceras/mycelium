@@ -28,6 +28,7 @@ pub enum Content {
 pub struct CommentDetail {
     pub comment: Comment,
     pub kids: Vec<CommentDetail>,
+    pub block_hash: String,
 }
 
 #[derive(Debug)]
@@ -82,6 +83,18 @@ impl PostDetail {
 impl CommentDetail {
     pub fn content(&self) -> Cow<'_, str> {
         self.comment.content()
+    }
+    fn block_link(&self) -> String {
+        format!("{}/{}", crate::BLOCK_EXPLORER, self.block_hash)
+    }
+    fn author(&self) -> String {
+        self.comment.author()
+    }
+    fn time_ago(&self) -> String {
+        self.comment.time_ago()
+    }
+    fn block_number(&self) -> u32 {
+        self.comment.block_number
     }
 }
 
@@ -163,13 +176,7 @@ impl Content {
                             [text!("by: {}", post_detail.author())],
                         ),
                         a(
-                            [
-                                href(post_detail.block_link()),
-                                on_click(move |e| {
-                                    e.prevent_default();
-                                    Msg::ShowPost(post_id)
-                                }),
-                            ],
+                            [href(post_detail.block_link())],
                             [text!("at: {}", post_detail.block_number())],
                         ),
                         a(
@@ -230,6 +237,17 @@ impl Content {
             [class("comment-detail")],
             [
                 self.view_comment(&comment_detail.comment),
+                div(
+                    [class("comment-stats")],
+                    [
+                        a([], [text!("by: {}", comment_detail.author())]),
+                        a(
+                            [href(comment_detail.block_link())],
+                            [text!("at: {}", comment_detail.block_number())],
+                        ),
+                        a([], [text!("{} ago", comment_detail.time_ago())]),
+                    ],
+                ),
                 ul(
                     [],
                     comment_detail
@@ -244,17 +262,7 @@ impl Content {
     fn view_comment(&self, comment: &Comment) -> Node<Msg> {
         li(
             [class("comment")],
-            [
-                div([class("comment-text")], [text(comment.content())]),
-                div(
-                    [class("comment-stats")],
-                    [
-                        a([], [text!("by: {}", comment.author())]),
-                        a([], [text!("at: {}", comment.block_number)]),
-                        a([], [text!("{} ago", comment.time_ago())]),
-                    ],
-                ),
-            ],
+            [div([class("comment-text")], [text(comment.content())])],
         )
     }
 }
