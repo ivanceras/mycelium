@@ -40,6 +40,11 @@ impl Api {
                 hex_extrinsic: &str,
             ) -> Result<Option<H256>, Error>;
 
+            pub async fn fetch_block_hash(&self, n: u32) -> Result<Option<H256>, Error>;
+
+            pub async fn fetch_genesis_hash(&self) -> Result<Option<H256>, Error> ;
+
+
         }
     }
 

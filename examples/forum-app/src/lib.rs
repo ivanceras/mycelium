@@ -4,6 +4,9 @@ use sauron::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
+const URL: &str = "http://localhost:9933";
+const BLOCK_EXPLORER: &str = "https://polkadot.js.org/apps/#/explorer/query";
+
 mod content;
 mod fetch;
 mod util;
@@ -26,6 +29,8 @@ enum Error {
     ApiInitializationError(String),
     #[error("Item can not be found on the server: {0}")]
     Error404(u32),
+    #[error("mycelium Api Error: {0}")]
+    MyCeliumError(#[from] mycelium::Error),
 }
 
 struct App {
@@ -47,7 +52,7 @@ impl App {
         log::info!("initializing api..");
         Cmd::new(move |program| {
             let async_fetch = |program: Program<Self, Msg>| async move {
-                match Api::new("http://localhost:9933").await {
+                match Api::new(URL).await {
                     Ok(api) => {
                         log::info!("got some api..");
                         program.dispatch(Msg::InitApi(api));

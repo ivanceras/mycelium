@@ -5,6 +5,7 @@ use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
 use mycelium::sp_core::sr25519::Pair;
+use mycelium::sp_core::H256;
 use mycelium::{
     types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
     Api,
@@ -31,10 +32,14 @@ pub async fn get_post_list(api: &Api) -> Result<Vec<PostDetail>, mycelium::Error
             let post: Option<Post> = Post::decode(&mut bytes.as_slice()).ok();
             if let Some(post) = post {
                 let reply_count = get_reply_count(api, post.post_id).await?;
+                let block_hash = get_block_hash(api, post.block_number)
+                    .await?
+                    .expect("must have a block hash");
                 all_post.push(PostDetail {
                     post,
                     reply_count,
                     comments: vec![],
+                    block_hash,
                 });
             }
         }
@@ -61,10 +66,14 @@ pub async fn get_post_details(
     if let Some(post) = post {
         let comment_replies = get_comment_replies(api, post_id).await?;
         let reply_count = get_reply_count(api, post_id).await?;
+        let block_hash = get_block_hash(api, post.block_number)
+            .await?
+            .expect("must have a block hash");
         Ok(Some(PostDetail {
             post,
             comments: comment_replies,
             reply_count,
+            block_hash,
         }))
     } else {
         Ok(None)
@@ -133,4 +142,12 @@ pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, 
     } else {
         Ok(None)
     }
+}
+
+pub async fn get_block_hash(
+    api: &Api,
+    block_number: u32,
+) -> Result<Option<String>, mycelium::Error> {
+    let block_hash = api.fetch_block_hash(block_number).await?;
+    Ok(block_hash.map(|hash| format!("{:#x}", hash)))
 }

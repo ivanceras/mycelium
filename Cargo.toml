@@ -46,6 +46,7 @@ frame-support = { default-features = false, version = "4.0.0-dev", git = "https:
 pretty_env_logger = "0.4.0"
 pallet-forum = { path = "./substrate-node-template/pallets/forum" }
 async-recursion = "1.0.0"
+anyhow = "1.0.58"
 
 [features]
 std = [
