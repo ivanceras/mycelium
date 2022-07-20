@@ -1,24 +1,16 @@
 use crate::content::*;
+use crate::Error;
 use async_recursion::async_recursion;
-use codec::{Decode, Encode};
-use frame_support::pallet_prelude::ConstU32;
+use codec::Decode;
 use frame_support::BoundedVec;
-use mycelium::sp_core::crypto::AccountId32;
-use mycelium::sp_core::sr25519::Pair;
-use mycelium::sp_core::H256;
-use mycelium::{
-    types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
-    Api,
-};
-use std::borrow::Cow;
-use wasm_bindgen::prelude::*;
+use mycelium::Api;
 
 const FORUM_MODULE: &str = "ForumModule";
 const ALL_POSTS: &str = "AllPosts";
 const ALL_COMMENTS: &str = "AllComments";
 const KIDS: &str = "Kids";
 
-pub async fn get_post_list(api: &Api) -> Result<Vec<PostDetail>, mycelium::Error> {
+pub async fn get_post_list(api: &Api) -> Result<Vec<PostDetail>, Error> {
     let mut all_post = Vec::with_capacity(10);
     log::info!("---->Getting all the post_id...");
     let next_to: Option<u32> = None;
@@ -49,7 +41,7 @@ pub async fn get_post_list(api: &Api) -> Result<Vec<PostDetail>, mycelium::Error
     Ok(all_post)
 }
 
-pub async fn get_reply_count(api: &Api, post_id: u32) -> Result<usize, mycelium::Error> {
+pub async fn get_reply_count(api: &Api, post_id: u32) -> Result<usize, Error> {
     let reply_count = get_kids(api, post_id)
         .await?
         .map(|kids| kids.len())
@@ -57,10 +49,7 @@ pub async fn get_reply_count(api: &Api, post_id: u32) -> Result<usize, mycelium:
     Ok(reply_count)
 }
 
-pub async fn get_post_details(
-    api: &Api,
-    post_id: u32,
-) -> Result<Option<PostDetail>, mycelium::Error> {
+pub async fn get_post_details(api: &Api, post_id: u32) -> Result<Option<PostDetail>, Error> {
     log::info!("getting the post details of {}", post_id);
     let post = get_post(api, post_id).await?;
     if let Some(post) = post {
@@ -80,7 +69,7 @@ pub async fn get_post_details(
     }
 }
 
-pub async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post>, mycelium::Error> {
+pub async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post>, Error> {
     if let Some(post) = api
         .fetch_opaque_storage_map(FORUM_MODULE, ALL_POSTS, post_id)
         .await?
@@ -92,10 +81,7 @@ pub async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post>, mycelium:
     }
 }
 
-async fn get_kids(
-    api: &Api,
-    item_id: u32,
-) -> Result<Option<BoundedVec<u32, MaxComments>>, mycelium::Error> {
+async fn get_kids(api: &Api, item_id: u32) -> Result<Option<BoundedVec<u32, MaxComments>>, Error> {
     if let Some(kids) = api
         .fetch_opaque_storage_map(FORUM_MODULE, KIDS, item_id)
         .await?
@@ -108,10 +94,7 @@ async fn get_kids(
 }
 
 #[async_recursion(?Send)]
-pub async fn get_comment_replies(
-    api: &Api,
-    item_id: u32,
-) -> Result<Vec<CommentDetail>, mycelium::Error> {
+pub async fn get_comment_replies(api: &Api, item_id: u32) -> Result<Vec<CommentDetail>, Error> {
     let mut comment_details = vec![];
     if let Some(kids) = get_kids(api, item_id).await? {
         log::info!("kids of item_id: {} are: {:?}", item_id, kids);
@@ -136,7 +119,7 @@ pub async fn get_comment_replies(
     Ok(comment_details)
 }
 
-pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, mycelium::Error> {
+pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, Error> {
     if let Some(comment) = api
         .fetch_opaque_storage_map(FORUM_MODULE, ALL_COMMENTS, comment_id)
         .await?
@@ -148,10 +131,7 @@ pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, 
     }
 }
 
-pub async fn get_block_hash(
-    api: &Api,
-    block_number: u32,
-) -> Result<Option<String>, mycelium::Error> {
+pub async fn get_block_hash(api: &Api, block_number: u32) -> Result<Option<String>, Error> {
     let block_hash = api.fetch_block_hash(block_number).await?;
     Ok(block_hash.map(|hash| format!("{:#x}", hash)))
 }
