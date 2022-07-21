@@ -52,43 +52,9 @@ impl CommentDetail {
             [class("comment-detail")],
             [
                 self.view_summary(),
-                self.view_submit_comment_form(ParentItem::Comment(self.comment_id())),
+                Content::view_submit_comment_form(ParentItem::Comment(self.comment_id())),
                 ul([], self.kids.iter().map(|comment| comment.view())),
             ],
-        )
-    }
-
-    fn view_submit_comment_form(&self, parent_item: ParentItem) -> Node<Msg> {
-        form(
-            [
-                class("comment-new"),
-                attributes::method("post"),
-                action("submit-comment"),
-            ],
-            [div(
-                [class("controls")],
-                [
-                    textarea(
-                        [
-                            class("comment-new-content"),
-                            on_change(|e| Msg::ChangeComment(e.value)),
-                        ],
-                        [],
-                    ),
-                    br([], []),
-                    input(
-                        [
-                            r#type("submit"),
-                            value("add comment"),
-                            on_click(move |e| {
-                                e.prevent_default();
-                                Msg::SubmitComment(parent_item)
-                            }),
-                        ],
-                        [],
-                    ),
-                ],
-            )],
         )
     }
 
