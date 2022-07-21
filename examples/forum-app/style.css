@@ -371,3 +371,9 @@ form.post-new, form.comment-new{
     width: 500px;
     height: 80px;
 }
+
+.comment-reply-btn {
+    cursor: pointer;
+    font-size: 12pt;
+    text-decoration: underline;
+}

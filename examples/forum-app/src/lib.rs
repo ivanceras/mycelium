@@ -12,14 +12,35 @@ mod fetch;
 mod util;
 
 pub enum Msg {
+    /// Ask the program to fetch a list of post summary
     FetchPosts,
+    /// Ask the program to Show post with `post_id`
     ShowPost(u32),
+    /// The program received a list of PostDetail summary
     PostsReceived(Vec<PostDetail>),
+    /// The program receives the requested post detail
     PostDetailsReceived(PostDetail),
+    /// Where there is an error encountered in the program
     Errored(Error),
+    /// Initiating the Api
     InitApi(Api),
     UrlChanged(String),
-    SubmitNewPost,
+    /// The user clicks on the `submit` button, the program will then show the form for submitting
+    /// a new post
+    ShowSubmitForm,
+    ShowReplyToCommentForm(ParentItem),
+    /// The comment content is changed, triggered when the user starts typing on the comment box
+    ChangeComment(String),
+    /// The post content is changed, triggered when the user starts typing on the post content box
+    ChangePost(String),
+    /// The user clicks on the `add comment` button.
+    /// The program will use `ParentItem` and the `new_comment` field of App and use it as input for the comment
+    /// reply
+    SubmitComment(ParentItem),
+    /// The user clicks on the `submit post` button.
+    /// The program will use the `new_post` field of App and use it as input for new post
+    /// submission
+    SubmitPost,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -36,6 +57,8 @@ pub enum Error {
 
 struct App {
     content: Option<Content>,
+    new_comment: Option<String>,
+    new_post: Option<String>,
     api: Option<Api>,
 }
 
@@ -43,6 +66,8 @@ impl Default for App {
     fn default() -> Self {
         Self {
             content: None,
+            new_comment: None,
+            new_post: None,
             api: None,
         }
     }
@@ -153,8 +178,12 @@ impl Application<Msg> for App {
                 Cmd::none()
             }
             Msg::ShowPost(post_id) => self.fetch_post_details(post_id),
-            Msg::SubmitNewPost => {
+            Msg::ShowSubmitForm => {
                 self.content = Some(Content::SubmitPost);
+                Cmd::none()
+            }
+            Msg::ShowReplyToCommentForm(parent_item) => {
+                self.content = Some(Content::CommentOn(parent_item));
                 Cmd::none()
             }
             Msg::PostDetailsReceived(post_detail) => {
@@ -164,6 +193,26 @@ impl Application<Msg> for App {
             Msg::UrlChanged(_url) => Cmd::none(),
             Msg::Errored(error) => {
                 self.content = Some(Content::from(error));
+                Cmd::none()
+            }
+            Msg::ChangeComment(comment) => {
+                log::info!("got a new comment: {}", comment);
+                self.new_comment = Some(comment);
+                Cmd::none()
+            }
+            Msg::ChangePost(post) => {
+                self.new_post = Some(post);
+                Cmd::none()
+            }
+            Msg::SubmitComment(parent) => {
+                let parent_item = parent.item_id();
+                let new_comment: &str = &self.new_comment.as_ref().expect("must have a comment");
+                log::info!("comment to :{} with:\n{}", parent_item, new_comment);
+                Cmd::none()
+            }
+            Msg::SubmitPost => {
+                let new_post: &str = self.new_post.as_ref().expect("must have a new post");
+                log::info!("A new post submission: \n{}", new_post);
                 Cmd::none()
             }
         }
@@ -186,7 +235,7 @@ impl Application<Msg> for App {
                         a(
                             [on_click(|e| {
                                 e.prevent_default();
-                                Msg::SubmitNewPost
+                                Msg::ShowSubmitForm
                             })],
                             [text("submit")],
                         ),

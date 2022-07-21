@@ -17,13 +17,22 @@ pub enum Content {
     PostDetail(PostDetail),
     Errored(crate::Error),
     SubmitPost,
-    CommentOn(Item),
+    CommentOn(ParentItem),
 }
 
-#[derive(Debug)]
-pub enum Item {
+#[derive(Debug, Clone, Copy)]
+pub enum ParentItem {
     Comment(u32),
     Post(u32),
+}
+
+impl ParentItem {
+    pub fn item_id(&self) -> u32 {
+        match self {
+            Self::Comment(comment_id) => *comment_id,
+            Self::Post(post_id) => *post_id,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -86,6 +95,10 @@ impl CommentDetail {
     pub fn content(&self) -> Cow<'_, str> {
         self.comment.content()
     }
+    pub fn comment_id(&self) -> u32 {
+        self.comment.comment_id
+    }
+
     fn block_link(&self) -> String {
         format!("{}/{}", crate::BLOCK_EXPLORER, self.block_hash)
     }
@@ -135,7 +148,7 @@ impl Content {
             Content::PostDetail(post_detail) => self.view_post_detail(post_detail),
             Content::Errored(error) => self.view_error(error),
             Content::SubmitPost => self.view_submit_post(),
-            Content::CommentOn(item) => self.view_submit_comment_to(item),
+            Content::CommentOn(item) => self.view_submit_comment(*item),
         }
     }
 
@@ -173,15 +186,41 @@ impl Content {
             [div(
                 [class("controls")],
                 [
-                    textarea([class("post-new-content")], []),
+                    textarea(
+                        [
+                            class("post-new-content"),
+                            on_change(|e| Msg::ChangePost(e.value)),
+                        ],
+                        [],
+                    ),
                     br([], []),
-                    input([r#type("submit"), value("submit")], []),
+                    input(
+                        [
+                            r#type("submit"),
+                            value("submit"),
+                            on_click(move |e| {
+                                e.prevent_default();
+                                Msg::SubmitPost
+                            }),
+                        ],
+                        [],
+                    ),
                 ],
             )],
         )
     }
 
-    fn view_submit_comment_to(&self, _item: &Item) -> Node<Msg> {
+    fn view_submit_comment(&self, parent_item: ParentItem) -> Node<Msg> {
+        div(
+            [class("submit-comment")],
+            [
+                a([], [text!("replying to {}", parent_item.item_id())]),
+                self.view_submit_comment_form(parent_item),
+            ],
+        )
+    }
+
+    fn view_submit_comment_form(&self, parent_item: ParentItem) -> Node<Msg> {
         form(
             [
                 class("comment-new"),
@@ -191,9 +230,25 @@ impl Content {
             [div(
                 [class("controls")],
                 [
-                    textarea([class("comment-new-content")], []),
+                    textarea(
+                        [
+                            class("comment-new-content"),
+                            on_change(|e| Msg::ChangeComment(e.value)),
+                        ],
+                        [],
+                    ),
                     br([], []),
-                    input([r#type("submit"), value("add comment")], []),
+                    input(
+                        [
+                            r#type("submit"),
+                            value("add comment"),
+                            on_click(move |e| {
+                                e.prevent_default();
+                                Msg::SubmitComment(parent_item)
+                            }),
+                        ],
+                        [],
+                    ),
                 ],
             )],
         )
@@ -204,7 +259,7 @@ impl Content {
             [class("post-detail")],
             [
                 self.view_post_detail_summary(post_detail),
-                self.view_submit_comment_to(&Item::Post(post_detail.post_id())),
+                self.view_submit_comment_form(ParentItem::Post(post_detail.post_id())),
                 ul(
                     [class("comment-details")],
                     post_detail
@@ -273,6 +328,7 @@ impl Content {
     }
 
     fn view_comment_detail(&self, comment_detail: &CommentDetail) -> Node<Msg> {
+        let comment_id = comment_detail.comment_id();
         li(
             [class("comment-detail")],
             [
@@ -287,6 +343,16 @@ impl Content {
                         ),
                         a([], [text!("{} ago", comment_detail.time_ago())]),
                     ],
+                ),
+                a(
+                    [
+                        class("comment-reply-btn"),
+                        on_click(move |e| {
+                            e.prevent_default();
+                            Msg::ShowReplyToCommentForm(ParentItem::Comment(comment_id))
+                        }),
+                    ],
+                    [text("reply")],
                 ),
                 ul(
                     [],
