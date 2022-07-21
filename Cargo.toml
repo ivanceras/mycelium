@@ -54,3 +54,12 @@ std = [
     "sp-runtime/std",
     "sp-version/std",
 ]
+
+[workspace]
+members = [
+    "examples/forum-app",
+]
+
+exclude = [
+    "substrate-node-template",
+]
