@@ -1,12 +1,15 @@
 use crate::util;
 use crate::Msg;
 use codec::{Decode, Encode};
+pub use comment::*;
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
 use sauron::html::attributes;
 use sauron::prelude::*;
 use std::borrow::Cow;
+
+mod comment;
 
 pub type MaxComments = ConstU32<1000>;
 pub type MaxContentLength = ConstU32<280>;
@@ -36,13 +39,6 @@ impl ParentItem {
 }
 
 #[derive(Debug)]
-pub struct CommentDetail {
-    pub comment: Comment,
-    pub kids: Vec<CommentDetail>,
-    pub block_hash: String,
-}
-
-#[derive(Debug)]
 pub struct PostDetail {
     pub post: Post,
     pub comments: Vec<CommentDetail>,
@@ -55,16 +51,6 @@ pub struct Post {
     pub post_id: u32,
     pub content: BoundedVec<u8, MaxContentLength>,
     pub author: AccountId32,
-    pub timestamp: u64,
-    pub block_number: u32,
-}
-
-#[derive(Encode, Decode, Debug)]
-pub struct Comment {
-    pub comment_id: u32,
-    pub content: BoundedVec<u8, MaxContentLength>,
-    pub author: AccountId32,
-    pub parent_item: u32,
     pub timestamp: u64,
     pub block_number: u32,
 }
@@ -91,28 +77,6 @@ impl PostDetail {
     }
 }
 
-impl CommentDetail {
-    pub fn content(&self) -> Cow<'_, str> {
-        self.comment.content()
-    }
-    pub fn comment_id(&self) -> u32 {
-        self.comment.comment_id
-    }
-
-    fn block_link(&self) -> String {
-        format!("{}/{}", crate::BLOCK_EXPLORER, self.block_hash)
-    }
-    fn author(&self) -> String {
-        self.comment.author()
-    }
-    fn time_ago(&self) -> String {
-        self.comment.time_ago()
-    }
-    fn block_number(&self) -> u32 {
-        self.comment.block_number
-    }
-}
-
 impl Post {
     pub fn content(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.content)
@@ -129,18 +93,6 @@ impl Post {
     }
 }
 
-impl Comment {
-    pub fn content(&self) -> Cow<'_, str> {
-        String::from_utf8_lossy(&self.content)
-    }
-    fn author(&self) -> String {
-        self.author.to_string()
-    }
-    fn time_ago(&self) -> String {
-        util::timestamp_ago(self.timestamp)
-    }
-}
-
 impl Content {
     pub fn view(&self) -> Node<Msg> {
         match self {
@@ -148,7 +100,7 @@ impl Content {
             Content::PostDetail(post_detail) => self.view_post_detail(post_detail),
             Content::Errored(error) => self.view_error(error),
             Content::SubmitPost => self.view_submit_post(),
-            Content::CommentDetail(comment_detail) => self.view_comment_detail(comment_detail),
+            Content::CommentDetail(comment_detail) => comment_detail.view(),
         }
     }
 
@@ -255,23 +207,7 @@ impl Content {
                     post_detail
                         .comments
                         .iter()
-                        .map(|comment| self.view_comment_list(comment)),
-                ),
-            ],
-        )
-    }
-
-    fn view_comment_list(&self, comment_detail: &CommentDetail) -> Node<Msg> {
-        li(
-            [class("comment-detail-list")],
-            [
-                self.view_comment_detail_summary(comment_detail),
-                ul(
-                    [],
-                    comment_detail
-                        .kids
-                        .iter()
-                        .map(|comment| self.view_comment_list(comment)),
+                        .map(|comment| comment.view_as_list()),
                 ),
             ],
         )
@@ -330,60 +266,6 @@ impl Content {
         li(
             [class("post")],
             [h2([], [pre([class("post-text")], [text(post.content())])])],
-        )
-    }
-
-    fn view_comment_detail(&self, comment_detail: &CommentDetail) -> Node<Msg> {
-        li(
-            [class("comment-detail")],
-            [
-                self.view_comment_detail_summary(comment_detail),
-                self.view_submit_comment_form(ParentItem::Comment(comment_detail.comment_id())),
-                ul(
-                    [],
-                    comment_detail
-                        .kids
-                        .iter()
-                        .map(|comment| self.view_comment_detail(comment)),
-                ),
-            ],
-        )
-    }
-    fn view_comment_detail_summary(&self, comment_detail: &CommentDetail) -> Node<Msg> {
-        let comment_id = comment_detail.comment_id();
-        div(
-            [class("comment-detail-summary")],
-            [
-                self.view_comment(&comment_detail.comment),
-                div(
-                    [class("comment-stats")],
-                    [
-                        a([], [text!("by: {}", comment_detail.author())]),
-                        a(
-                            [href(comment_detail.block_link())],
-                            [text!("at: {}", comment_detail.block_number())],
-                        ),
-                        a([], [text!("{} ago", comment_detail.time_ago())]),
-                    ],
-                ),
-                a(
-                    [
-                        class("comment-reply-btn"),
-                        on_click(move |e| {
-                            e.prevent_default();
-                            Msg::ShowReplyToCommentForm(comment_id)
-                        }),
-                    ],
-                    [text("reply")],
-                ),
-            ],
-        )
-    }
-
-    fn view_comment(&self, comment: &Comment) -> Node<Msg> {
-        li(
-            [class("comment")],
-            [pre([class("comment-text")], [text(comment.content())])],
         )
     }
 }

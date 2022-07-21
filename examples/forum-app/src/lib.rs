@@ -1,4 +1,4 @@
-#![deny(warnings)]
+#![allow(warnings)]
 use content::*;
 use mycelium::Api;
 use sauron::prelude::*;
