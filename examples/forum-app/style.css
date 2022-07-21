@@ -309,7 +309,7 @@ header a{
     padding: 0;
 }
 
-.post-detail .post-detail-summary li{
+.post-detail-summary li, .comment-detail-summary li{
     list-style: none;
 }
 
@@ -335,7 +335,15 @@ header a{
     border: 0;
 }
 
+.post-detail-summary li{
+    list-style: none;
+}
+
 .comment-details li{
+    list-style: none;
+}
+
+.comment-detail li{
     list-style: none;
 }
 

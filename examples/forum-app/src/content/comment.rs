@@ -48,7 +48,7 @@ impl CommentDetail {
     }
 
     pub fn view(&self) -> Node<Msg> {
-        li(
+        div(
             [class("comment-detail")],
             [
                 self.view_as_summary(),
