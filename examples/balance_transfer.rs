@@ -16,6 +16,7 @@ use std::str::FromStr;
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
     let from: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
+    let alice_account_id = AccountKeyring::Alice.to_account_id();
     println!("raw vec: {:?}", from.to_raw_vec());
 
     let to: AccountId32 = AccountKeyring::Charlie.to_account_id();
@@ -28,6 +29,10 @@ async fn main() -> Result<(), mycelium::Error> {
     println!("transfering balance from: {:?} to: {}", from.as_ref(), to);
 
     let api = Api::new("http://localhost:9933").await?;
+
+    let info = api.get_account_info(alice_account_id).await?;
+    println!("account info: {:#?}", info);
+
     let result = api
         .balance_transfer(from, to, 42_000_000_000_000_u128, None)
         .await?;

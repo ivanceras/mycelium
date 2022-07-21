@@ -1,6 +1,7 @@
 //! This example get the values from the storage items from their respective pallets
 #![allow(warnings)]
 use mycelium::sp_core::crypto::AccountId32;
+use mycelium::types::account_info::AccountInfo;
 use mycelium::Api;
 use pallet_balances::AccountData;
 use sp_keyring::AccountKeyring;
@@ -22,11 +23,10 @@ async fn main() -> Result<(), mycelium::Error> {
     );
 
     let account_id: AccountId32 = AccountKeyring::Alice.to_account_id();
-    let account_balance: Result<Option<u128>, _> = api
-        .fetch_storage_map("Balances", "Account", account_id)
-        .await;
+    let account_info: Result<Option<AccountInfo>, _> =
+        api.fetch_storage_map("System", "Account", account_id).await;
 
-    println!("account_balance: {:?}", account_balance);
+    println!("account_info: {:#?}", account_info);
 
     let storage_type = api
         .metadata()
