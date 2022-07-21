@@ -233,14 +233,20 @@ impl Application<Msg> for App {
             }
             Msg::SubmitComment(parent) => {
                 let parent_item = parent.item_id();
-                let new_comment: &str = &self.new_comment.as_ref().expect("must have a comment");
-                log::info!("comment to :{} with:\n{}", parent_item, new_comment);
-                Cmd::none()
+                if let Some(new_comment) = &self.new_comment {
+                    log::info!("comment to :{} with:\n{}", parent_item, new_comment);
+                    Cmd::none()
+                } else {
+                    Cmd::none()
+                }
             }
             Msg::SubmitPost => {
-                let new_post: &str = self.new_post.as_ref().expect("must have a new post");
-                log::info!("A new post submission: \n{}", new_post);
-                Cmd::none()
+                if let Some(new_post) = &self.new_post {
+                    log::info!("A new post submission: \n{}", new_post);
+                    Cmd::none()
+                } else {
+                    Cmd::none()
+                }
             }
         }
     }
