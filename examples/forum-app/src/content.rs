@@ -17,7 +17,7 @@ pub enum Content {
     PostDetail(PostDetail),
     Errored(crate::Error),
     SubmitPost,
-    CommentOn(ParentItem),
+    CommentDetail(CommentDetail),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -148,7 +148,7 @@ impl Content {
             Content::PostDetail(post_detail) => self.view_post_detail(post_detail),
             Content::Errored(error) => self.view_error(error),
             Content::SubmitPost => self.view_submit_post(),
-            Content::CommentOn(item) => self.view_submit_comment(*item),
+            Content::CommentDetail(comment_detail) => self.view_comment_detail(comment_detail),
         }
     }
 
@@ -210,16 +210,6 @@ impl Content {
         )
     }
 
-    fn view_submit_comment(&self, parent_item: ParentItem) -> Node<Msg> {
-        div(
-            [class("submit-comment")],
-            [
-                a([], [text!("replying to {}", parent_item.item_id())]),
-                self.view_submit_comment_form(parent_item),
-            ],
-        )
-    }
-
     fn view_submit_comment_form(&self, parent_item: ParentItem) -> Node<Msg> {
         form(
             [
@@ -265,7 +255,23 @@ impl Content {
                     post_detail
                         .comments
                         .iter()
-                        .map(|comment| self.view_comment_detail(comment)),
+                        .map(|comment| self.view_comment_list(comment)),
+                ),
+            ],
+        )
+    }
+
+    fn view_comment_list(&self, comment_detail: &CommentDetail) -> Node<Msg> {
+        li(
+            [class("comment-detail-list")],
+            [
+                self.view_comment_detail_summary(comment_detail),
+                ul(
+                    [],
+                    comment_detail
+                        .kids
+                        .iter()
+                        .map(|comment| self.view_comment_list(comment)),
                 ),
             ],
         )
@@ -328,9 +334,25 @@ impl Content {
     }
 
     fn view_comment_detail(&self, comment_detail: &CommentDetail) -> Node<Msg> {
-        let comment_id = comment_detail.comment_id();
         li(
             [class("comment-detail")],
+            [
+                self.view_comment_detail_summary(comment_detail),
+                self.view_submit_comment_form(ParentItem::Comment(comment_detail.comment_id())),
+                ul(
+                    [],
+                    comment_detail
+                        .kids
+                        .iter()
+                        .map(|comment| self.view_comment_detail(comment)),
+                ),
+            ],
+        )
+    }
+    fn view_comment_detail_summary(&self, comment_detail: &CommentDetail) -> Node<Msg> {
+        let comment_id = comment_detail.comment_id();
+        div(
+            [class("comment-detail-summary")],
             [
                 self.view_comment(&comment_detail.comment),
                 div(
@@ -349,17 +371,10 @@ impl Content {
                         class("comment-reply-btn"),
                         on_click(move |e| {
                             e.prevent_default();
-                            Msg::ShowReplyToCommentForm(ParentItem::Comment(comment_id))
+                            Msg::ShowReplyToCommentForm(comment_id)
                         }),
                     ],
                     [text("reply")],
-                ),
-                ul(
-                    [],
-                    comment_detail
-                        .kids
-                        .iter()
-                        .map(|comment| self.view_comment_detail(comment)),
                 ),
             ],
         )

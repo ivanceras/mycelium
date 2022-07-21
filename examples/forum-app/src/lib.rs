@@ -1,4 +1,4 @@
-#![allow(warnings)]
+#![deny(warnings)]
 use content::*;
 use mycelium::Api;
 use sauron::prelude::*;
@@ -20,6 +20,8 @@ pub enum Msg {
     PostsReceived(Vec<PostDetail>),
     /// The program receives the requested post detail
     PostDetailsReceived(PostDetail),
+    /// The program received the requested comment detail
+    CommentDetailReceived(CommentDetail),
     /// Where there is an error encountered in the program
     Errored(Error),
     /// Initiating the Api
@@ -28,7 +30,7 @@ pub enum Msg {
     /// The user clicks on the `submit` button, the program will then show the form for submitting
     /// a new post
     ShowSubmitForm,
-    ShowReplyToCommentForm(ParentItem),
+    ShowReplyToCommentForm(u32),
     /// The comment content is changed, triggered when the user starts typing on the comment box
     ChangeComment(String),
     /// The post content is changed, triggered when the user starts typing on the post content box
@@ -138,6 +140,30 @@ impl App {
         })
     }
 
+    fn fetch_comment_details(&self, comment_id: u32) -> Cmd<Self, Msg> {
+        log::warn!("fetching comment details for comment_id: {}", comment_id);
+        let api = self.api.clone();
+        Cmd::new(move |program| {
+            let async_fetch = |program: Program<Self, Msg>| async move {
+                let api = api.unwrap();
+                match fetch::get_comment_detail(&api, comment_id).await {
+                    Ok(comment_detail) => {
+                        if let Some(comment_detail) = comment_detail {
+                            program.dispatch(Msg::CommentDetailReceived(comment_detail));
+                        } else {
+                            program.dispatch(Msg::Errored(Error::Error404(comment_id)))
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Something is wrong when fetching: {}", e.to_string());
+                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                    }
+                }
+            };
+            spawn_local(async_fetch(program))
+        })
+    }
+
     fn view_content(&self) -> Node<Msg> {
         match &self.content {
             Some(content) => div([class("content")], [content.view()]),
@@ -182,12 +208,13 @@ impl Application<Msg> for App {
                 self.content = Some(Content::SubmitPost);
                 Cmd::none()
             }
-            Msg::ShowReplyToCommentForm(parent_item) => {
-                self.content = Some(Content::CommentOn(parent_item));
-                Cmd::none()
-            }
+            Msg::ShowReplyToCommentForm(parent_item) => self.fetch_comment_details(parent_item),
             Msg::PostDetailsReceived(post_detail) => {
                 self.content = Some(Content::from(post_detail));
+                Cmd::none()
+            }
+            Msg::CommentDetailReceived(comment_detail) => {
+                self.content = Some(Content::CommentDetail(comment_detail));
                 Cmd::none()
             }
             Msg::UrlChanged(_url) => Cmd::none(),

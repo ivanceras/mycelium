@@ -100,23 +100,33 @@ pub async fn get_comment_replies(api: &Api, item_id: u32) -> Result<Vec<CommentD
         log::info!("kids of item_id: {} are: {:?}", item_id, kids);
         for kid in kids {
             log::info!("getting comment: {}", kid);
-            let comment = get_comment(api, kid)
-                .await?
-                .expect("must have a comment entry");
-
-            let kid_comments = get_comment_replies(api, kid).await?;
-            let block_hash = get_block_hash(api, comment.block_number)
-                .await?
-                .expect("must have a block hash");
-            comment_details.push(CommentDetail {
-                comment,
-                kids: kid_comments,
-                block_hash,
-            });
+            if let Some(comment_detail) = get_comment_detail(api, kid).await? {
+                comment_details.push(comment_detail);
+            }
         }
     }
     comment_details.sort_unstable_by_key(|item| item.comment.comment_id);
     Ok(comment_details)
+}
+
+pub async fn get_comment_detail(
+    api: &Api,
+    comment_id: u32,
+) -> Result<Option<CommentDetail>, Error> {
+    if let Some(comment) = get_comment(api, comment_id).await? {
+        let kid_comments = get_comment_replies(api, comment_id).await?;
+        let block_hash = get_block_hash(api, comment.block_number)
+            .await?
+            .expect("must have a block hash");
+
+        Ok(Some(CommentDetail {
+            comment,
+            kids: kid_comments,
+            block_hash,
+        }))
+    } else {
+        Ok(None)
+    }
 }
 
 pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, Error> {
