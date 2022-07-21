@@ -236,6 +236,7 @@ impl Application<Msg> for App {
                 let parent_item = parent.item_id();
                 if let Some(new_comment) = &self.new_comment {
                     log::info!("comment to :{} with:\n{}", parent_item, new_comment);
+                    //TODO: submit the comment using alice account
                     Cmd::none()
                 } else {
                     Cmd::none()
@@ -244,6 +245,7 @@ impl Application<Msg> for App {
             Msg::SubmitPost => {
                 if let Some(new_post) = &self.new_post {
                     log::info!("A new post submission: \n{}", new_post);
+                    // TODO: submit the post using alice account
                     Cmd::none()
                 } else {
                     Cmd::none()
