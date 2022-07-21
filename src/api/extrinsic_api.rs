@@ -83,7 +83,7 @@ impl Api {
                     Some(hash) => hash,
                     None => self.genesis_hash,
                 };
-                let raw_payload = SignedPayload::from_raw(
+                let raw_payload: SignedPayload<Call> = SignedPayload::from_raw(
                     call.clone(),
                     extra.clone(),
                     (
@@ -96,8 +96,8 @@ impl Api {
                         (),
                     ),
                 );
-                let signature: P::Signature =
-                    raw_payload.using_encoded(|payload| signer.sign(payload));
+                let signature = self.sign_raw_payload(&signer, raw_payload);
+
                 let multi_signer = MultiSigner::from(signer.public());
                 let multi_signature = MultiSignature::from(signature);
                 Ok(UncheckedExtrinsicV4::new_signed(
@@ -108,6 +108,25 @@ impl Api {
                 ))
             }
         }
+    }
+
+    pub fn sign_raw_payload<P, Call>(
+        &self,
+        signer: &P,
+        raw_payload: SignedPayload<Call>,
+    ) -> P::Signature
+    where
+        P: Pair,
+        Call: Encode + Clone + fmt::Debug,
+    {
+        raw_payload.using_encoded(|payload| self.sign(signer, payload))
+    }
+
+    pub fn sign<P>(&self, signer: &P, payload: &[u8]) -> P::Signature
+    where
+        P: Pair,
+    {
+        signer.sign(payload)
     }
 
     pub async fn execute_extrinsic<P, Params, Tip, Call>(

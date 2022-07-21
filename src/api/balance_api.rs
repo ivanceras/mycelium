@@ -1,5 +1,4 @@
 //! Balance transfer, set_balance api
-use crate::types::account_info::BlockNumber;
 use crate::types::extrinsic_params::PlainTipExtrinsicParamsBuilder;
 use crate::{
     error::Error,
@@ -14,8 +13,6 @@ use sp_core::crypto::AccountId32;
 use sp_core::crypto::Pair;
 use sp_core::H256;
 use sp_runtime::generic::Era;
-use sp_runtime::generic::Header;
-use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::MultiSignature;
 use sp_runtime::MultiSigner;
 
@@ -44,28 +41,20 @@ impl Api {
             Compact(amount),
         );
 
-        let (head_hash, tx_params) = if let Some(tip) = tip {
+        let tx_params = if let Some(tip) = tip {
             let genesis_hash = self.genesis_hash();
-            let head_hash = self
-                .chain_get_finalized_head()
-                .await?
-                .expect("must have a finalized head");
-            let header: Header<BlockNumber, BlakeTwo256> = self
-                .chain_get_header(head_hash)
-                .await?
-                .expect("must have a header");
 
-            let period = 5;
             let tx_params = PlainTipExtrinsicParamsBuilder::new()
-                .era(Era::mortal(period, header.number.into()), genesis_hash)
-                .tip(tip);
-            (Some(head_hash), Some(tx_params))
+                .tip(tip)
+                .era(Era::Immortal, genesis_hash);
+
+            Some(tx_params)
         } else {
-            (None, None)
+            None
         };
 
         self.execute_extrinsic::<P, PlainTipExtrinsicParams, PlainTip,
-            ([u8; 2], GenericAddress, Compact<u128>)>(Some(from), balance_call, head_hash, tx_params)
+            ([u8; 2], GenericAddress, Compact<u128>)>(Some(from), balance_call, None, tx_params)
             .await
     }
 }
