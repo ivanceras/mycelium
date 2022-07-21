@@ -1,11 +1,12 @@
-#![allow(warnings)]
+#![deny(warnings)]
 use content::*;
 use mycelium::Api;
 use sauron::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
 const URL: &str = "http://localhost:9933";
-const BLOCK_EXPLORER: &str = "https://polkadot.js.org/apps/#/explorer/query";
+const BLOCK_EXPLORER: &str =
+    "https://polkadot.js.org/apps/?rpc=ws://127.0.0.1:9944#/explorer/query";
 
 mod content;
 mod fetch;
