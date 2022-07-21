@@ -4,6 +4,7 @@ use codec::{Decode, Encode};
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
+use sauron::html::attributes;
 use sauron::prelude::*;
 use std::borrow::Cow;
 
@@ -15,6 +16,14 @@ pub enum Content {
     Posts(Vec<PostDetail>),
     PostDetail(PostDetail),
     Errored(crate::Error),
+    SubmitPost,
+    CommentOn(Item),
+}
+
+#[derive(Debug)]
+pub enum Item {
+    Comment(u32),
+    Post(u32),
 }
 
 #[derive(Debug)]
@@ -125,6 +134,8 @@ impl Content {
             Content::Posts(post_details) => self.view_post_detail_list(post_details),
             Content::PostDetail(post_detail) => self.view_post_detail(post_detail),
             Content::Errored(error) => self.view_error(error),
+            Content::SubmitPost => self.view_submit_post(),
+            Content::CommentOn(item) => self.view_submit_comment_to(item),
         }
     }
 
@@ -136,23 +147,79 @@ impl Content {
     }
 
     fn view_post_detail_list(&self, post_details: &[PostDetail]) -> Node<Msg> {
-        if post_details.is_empty() {
-            div([class("empty-posts")], [text("There are no posts yet!")])
-        } else {
-            ol(
-                [class("post-details")],
-                post_details
-                    .into_iter()
-                    .rev()
-                    .map(|post| self.view_post_detail(post)),
-            )
-        }
+        div(
+            [class("post-details-list")],
+            [if post_details.is_empty() {
+                div([class("empty-posts")], [text("There are no posts yet!")])
+            } else {
+                ol(
+                    [class("post-details")],
+                    post_details
+                        .into_iter()
+                        .rev()
+                        .map(|post| self.view_post_detail_summary(post)),
+                )
+            }],
+        )
+    }
+
+    fn view_submit_post(&self) -> Node<Msg> {
+        form(
+            [
+                class("post-new"),
+                attributes::method("post"),
+                action("submit-post"),
+            ],
+            [div(
+                [class("controls")],
+                [
+                    textarea([class("post-new-content")], []),
+                    br([], []),
+                    input([r#type("submit"), value("submit")], []),
+                ],
+            )],
+        )
+    }
+
+    fn view_submit_comment_to(&self, _item: &Item) -> Node<Msg> {
+        form(
+            [
+                class("comment-new"),
+                attributes::method("post"),
+                action("submit-comment"),
+            ],
+            [div(
+                [class("controls")],
+                [
+                    textarea([class("comment-new-content")], []),
+                    br([], []),
+                    input([r#type("submit"), value("add comment")], []),
+                ],
+            )],
+        )
     }
 
     fn view_post_detail(&self, post_detail: &PostDetail) -> Node<Msg> {
-        let post_id = post_detail.post_id();
         div(
             [class("post-detail")],
+            [
+                self.view_post_detail_summary(post_detail),
+                self.view_submit_comment_to(&Item::Post(post_detail.post_id())),
+                ul(
+                    [class("comment-details")],
+                    post_detail
+                        .comments
+                        .iter()
+                        .map(|comment| self.view_comment_detail(comment)),
+                ),
+            ],
+        )
+    }
+
+    fn view_post_detail_summary(&self, post_detail: &PostDetail) -> Node<Msg> {
+        let post_id = post_detail.post_id();
+        div(
+            [class("post-detail-summary")],
             [
                 self.view_post(&post_detail.post),
                 div(
@@ -193,13 +260,6 @@ impl Content {
                             [text!("{} comments", post_detail.reply_count)],
                         ),
                     ],
-                ),
-                ul(
-                    [class("comment-details")],
-                    post_detail
-                        .comments
-                        .iter()
-                        .map(|comment| self.view_comment_detail(comment)),
                 ),
             ],
         )

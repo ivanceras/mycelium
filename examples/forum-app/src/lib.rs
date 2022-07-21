@@ -1,4 +1,4 @@
-#![deny(warnings)]
+#![allow(warnings)]
 use content::*;
 use mycelium::Api;
 use sauron::prelude::*;
@@ -19,6 +19,7 @@ pub enum Msg {
     Errored(Error),
     InitApi(Api),
     UrlChanged(String),
+    SubmitNewPost,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -114,7 +115,7 @@ impl App {
 
     fn view_content(&self) -> Node<Msg> {
         match &self.content {
-            Some(content) => content.view(),
+            Some(content) => div([class("content")], [content.view()]),
             None => p([], [text("Waiting around...")]),
         }
     }
@@ -152,6 +153,10 @@ impl Application<Msg> for App {
                 Cmd::none()
             }
             Msg::ShowPost(post_id) => self.fetch_post_details(post_id),
+            Msg::SubmitNewPost => {
+                self.content = Some(Content::SubmitPost);
+                Cmd::none()
+            }
             Msg::PostDetailsReceived(post_detail) => {
                 self.content = Some(Content::from(post_detail));
                 Cmd::none()
@@ -170,13 +175,22 @@ impl Application<Msg> for App {
             [
                 header(
                     [],
-                    [a(
-                        [on_click(|e| {
-                            e.prevent_default();
-                            Msg::FetchPosts
-                        })],
-                        [div([class("logo")], [text("Y")])],
-                    )],
+                    [
+                        a(
+                            [on_click(|e| {
+                                e.prevent_default();
+                                Msg::FetchPosts
+                            })],
+                            [div([class("logo")], [text("Y")])],
+                        ),
+                        a(
+                            [on_click(|e| {
+                                e.prevent_default();
+                                Msg::SubmitNewPost
+                            })],
+                            [text("submit")],
+                        ),
+                    ],
                 ),
                 self.view_content(),
             ],
