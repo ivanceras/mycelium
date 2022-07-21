@@ -1,14 +1,9 @@
-use crate::util;
 use crate::Msg;
-use codec::{Decode, Encode};
 pub use comment::*;
 use frame_support::pallet_prelude::ConstU32;
-use frame_support::BoundedVec;
-use mycelium::sp_core::crypto::AccountId32;
 pub use post::*;
 use sauron::html::attributes;
 use sauron::prelude::*;
-use std::borrow::Cow;
 
 pub mod comment;
 pub mod post;

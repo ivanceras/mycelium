@@ -2,11 +2,8 @@ use crate::util;
 use crate::Msg;
 use crate::*;
 use codec::{Decode, Encode};
-use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
-use sauron::html::attributes;
-use sauron::prelude::*;
 use std::borrow::Cow;
 
 #[derive(Debug)]
