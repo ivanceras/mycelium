@@ -4,7 +4,6 @@ use mycelium::sp_core::crypto::AccountId32;
 use mycelium::Api;
 use pallet_balances::AccountData;
 use sp_keyring::AccountKeyring;
-use scale_info::TypeDef
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
