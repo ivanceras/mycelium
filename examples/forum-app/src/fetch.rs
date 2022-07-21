@@ -105,7 +105,7 @@ pub async fn get_comment_replies(api: &Api, item_id: u32) -> Result<Vec<CommentD
             }
         }
     }
-    comment_details.sort_unstable_by_key(|item| item.comment.comment_id);
+    comment_details.sort_unstable_by_key(|item| item.comment_id());
     Ok(comment_details)
 }
 

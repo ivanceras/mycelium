@@ -56,7 +56,9 @@ impl PostDetail {
                 Content::view_submit_comment_form(ParentItem::Post(self.post_id())),
                 ul(
                     [class("comment-details")],
-                    self.comments.iter().map(|comment| comment.view_as_list()),
+                    self.comments
+                        .iter()
+                        .map(|comment| comment.view_recursively()),
                 ),
             ],
         )

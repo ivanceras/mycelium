@@ -51,24 +51,27 @@ impl CommentDetail {
         li(
             [class("comment-detail")],
             [
-                self.view_summary(),
+                self.view_as_summary(),
                 Content::view_submit_comment_form(ParentItem::Comment(self.comment_id())),
                 ul([], self.kids.iter().map(|comment| comment.view())),
             ],
         )
     }
 
-    pub fn view_as_list(&self) -> Node<Msg> {
+    pub fn view_recursively(&self) -> Node<Msg> {
         li(
             [class("comment-detail-list")],
             [
-                self.view_summary(),
-                ul([], self.kids.iter().map(|comment| comment.view_as_list())),
+                self.view_as_summary(),
+                ul(
+                    [],
+                    self.kids.iter().map(|comment| comment.view_recursively()),
+                ),
             ],
         )
     }
 
-    pub fn view_summary(&self) -> Node<Msg> {
+    pub fn view_as_summary(&self) -> Node<Msg> {
         let comment_id = self.comment_id();
         div(
             [class("comment-detail-summary")],
