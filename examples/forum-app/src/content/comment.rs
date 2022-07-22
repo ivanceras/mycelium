@@ -30,6 +30,9 @@ impl CommentDetail {
     pub fn comment_id(&self) -> u32 {
         self.comment.comment_id
     }
+    fn link(&self) -> String {
+        self.comment.link()
+    }
 
     pub fn block_link(&self) -> String {
         format!("{}/{}", crate::BLOCK_EXPLORER, self.block_hash)
@@ -91,6 +94,7 @@ impl CommentDetail {
                 a(
                     [
                         class("comment-reply-btn"),
+                        href(self.link()),
                         on_click(move |e| {
                             e.prevent_default();
                             Msg::ShowReplyToCommentForm(comment_id)
@@ -112,6 +116,9 @@ impl Comment {
     }
     pub fn time_ago(&self) -> String {
         util::timestamp_ago(self.timestamp)
+    }
+    pub fn link(&self) -> String {
+        format!("/comment/{}", self.comment_id)
     }
 
     fn view(&self) -> Node<Msg> {

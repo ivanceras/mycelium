@@ -117,7 +117,7 @@ impl Post {
     }
 
     pub fn link(&self) -> String {
-        format!("/item/{}", self.post_id)
+        format!("/post/{}", self.post_id)
     }
     fn author(&self) -> String {
         self.author.to_string()

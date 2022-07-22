@@ -149,12 +149,33 @@ pub async fn get_block_hash(api: &Api, block_number: u32) -> Result<Option<Strin
 }
 
 pub async fn add_post(api: &Api, post: &str) -> Result<Option<H256>, Error> {
-    let pallet_call = api.pallet_call_index(FORUM_MODULE, "post_content")?;
-
     let bounded_content = BoundedVec::try_from(post.as_bytes().to_vec())
         .or_else(|_e| Err(Error::ContentTooLong(post.len(), MaxContentLength::get())))?;
 
+    let pallet_call = api.pallet_call_index(FORUM_MODULE, "post_content")?;
     let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) = (pallet_call, bounded_content);
+
+    let extrinsic = crate::sign_call(api, call).await?;
+    let tx_hash = api.submit_extrinsic(extrinsic).await?;
+
+    Ok(tx_hash)
+}
+
+pub async fn add_comment(
+    api: &Api,
+    parent_item: u32,
+    comment: &str,
+) -> Result<Option<H256>, Error> {
+    let bounded_content = BoundedVec::try_from(comment.as_bytes().to_vec()).or_else(|_e| {
+        Err(Error::ContentTooLong(
+            comment.len(),
+            MaxContentLength::get(),
+        ))
+    })?;
+
+    let pallet_call = api.pallet_call_index(FORUM_MODULE, "comment_on")?;
+    let call: ([u8; 2], u32, BoundedVec<u8, MaxContentLength>) =
+        (pallet_call, parent_item, bounded_content);
 
     let extrinsic = crate::sign_call(api, call).await?;
     let tx_hash = api.submit_extrinsic(extrinsic).await?;

@@ -149,6 +149,31 @@ impl App {
         })
     }
 
+    fn submit_comment(&self, parent_item: u32, new_comment: &str) -> Cmd<Self, Msg> {
+        log::info!("Submitting posts..");
+        let api = self.api.clone();
+        let new_comment = new_comment.to_owned();
+        Cmd::new(move |program| {
+            let async_fetch = |program: Program<Self, Msg>| async move {
+                let api = api.unwrap();
+                match fetch::add_comment(&api, parent_item, &new_comment).await {
+                    Ok(tx_hash) => {
+                        log::info!(
+                            "Posting a new content successful with tx_hash {:?}",
+                            tx_hash
+                        );
+                        program.dispatch_with_delay(Msg::ShowReplyToCommentForm(parent_item), 2000);
+                    }
+                    Err(e) => {
+                        log::error!("Something is wrong when submitting post: {}", e.to_string());
+                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                    }
+                }
+            };
+            spawn_local(async_fetch(program))
+        })
+    }
+
     fn fetch_post_details(&self, post_id: u32) -> Cmd<Self, Msg> {
         log::warn!("fetching posts..");
         let api = self.api.clone();
@@ -184,6 +209,11 @@ impl App {
                         if let Some(comment_detail) = comment_detail {
                             program.dispatch(Msg::CommentDetailReceived(comment_detail));
                         } else {
+                            log::error!(
+                                "Errored fetching comment details: {:#?}, comment_id: {}",
+                                comment_detail,
+                                comment_id
+                            );
                             program.dispatch(Msg::Errored(Error::Error404(comment_id)))
                         }
                     }
@@ -268,8 +298,7 @@ impl Application<Msg> for App {
                 let parent_item = parent.item_id();
                 if let Some(new_comment) = &self.new_comment {
                     log::info!("comment to :{} with:\n{}", parent_item, new_comment);
-                    //TODO: submit the comment using alice account
-                    Cmd::none()
+                    self.submit_comment(parent_item, new_comment)
                 } else {
                     Cmd::none()
                 }
