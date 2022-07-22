@@ -153,6 +153,7 @@ impl Api {
                 let params: BaseExtrinsicParams<Tip> =
                     BaseExtrinsicParams::new(nonce, other_params);
                 let extra: GenericExtra = GenericExtra::from(params);
+
                 let xt = self.sign_extrinsic_with_extra(signer, call, extra).await?;
                 Ok(xt)
             }
@@ -196,9 +197,7 @@ impl Api {
         Call: Clone + fmt::Debug + Encode,
     {
         let xt = self.compose_extrinsics::<P, Call>(signer, call).await?;
-
-        let encoded = xt.hex_encode();
-        self.author_submit_extrinsic(&encoded).await
+        Ok(self.submit_extrinsic(xt).await?)
     }
 
     pub async fn sign_and_submit_extrinsic_with_params<P, Params, Tip, Call>(
@@ -219,8 +218,18 @@ impl Api {
         let xt = self
             .compose_extrinsics_with_params::<P, Params, Tip, Call>(signer, call, extrinsic_params)
             .await?;
+        Ok(self.submit_extrinsic(xt).await?)
+    }
 
+    /// submit the extrinsic into the node
+    pub async fn submit_extrinsic<Call>(
+        &self,
+        xt: UncheckedExtrinsicV4<Call>,
+    ) -> Result<Option<H256>, Error>
+    where
+        Call: Clone + fmt::Debug + Encode,
+    {
         let encoded = xt.hex_encode();
-        self.author_submit_extrinsic(&encoded).await
+        Ok(self.author_submit_extrinsic(&encoded).await?)
     }
 }
