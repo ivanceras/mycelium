@@ -53,11 +53,11 @@ impl Api {
         UncheckedExtrinsicV4::new_unsigned(call)
     }
 
+    /// create an UncheckedExtrinsic from call with an optional signer
     pub async fn compose_extrinsics<P, Params, Tip, Call>(
         &self,
         signer: Option<P>,
         call: Call,
-        head_hash: Option<H256>,
         extrinsic_params: Option<Params::OtherParams>,
     ) -> Result<UncheckedExtrinsicV4<Call>, Error>
     where
@@ -78,11 +78,6 @@ impl Api {
                 let params: BaseExtrinsicParams<Tip> =
                     BaseExtrinsicParams::new(nonce, other_params);
                 let extra = GenericExtra::from(params);
-                println!("call: {:?}", call);
-                let head_or_genesis_hash = match head_hash {
-                    Some(hash) => hash,
-                    None => self.genesis_hash,
-                };
                 let raw_payload: SignedPayload<Call> = SignedPayload::from_raw(
                     call.clone(),
                     extra.clone(),
@@ -90,7 +85,7 @@ impl Api {
                         self.runtime_version.spec_version,
                         self.runtime_version.transaction_version,
                         self.genesis_hash,
-                        head_or_genesis_hash,
+                        self.genesis_hash,
                         (),
                         (),
                         (),
@@ -133,7 +128,6 @@ impl Api {
         &self,
         signer: Option<P>,
         call: Call,
-        head_hash: Option<H256>,
         extrinsic_params: Option<Params::OtherParams>,
     ) -> Result<Option<H256>, Error>
     where
@@ -146,7 +140,7 @@ impl Api {
         Call: Clone + fmt::Debug + Encode,
     {
         let xt = self
-            .compose_extrinsics::<P, Params, Tip, Call>(signer, call, head_hash, extrinsic_params)
+            .compose_extrinsics::<P, Params, Tip, Call>(signer, call, extrinsic_params)
             .await?;
 
         let encoded = xt.hex_encode();

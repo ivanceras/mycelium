@@ -17,6 +17,7 @@ use sp_runtime::MultiSignature;
 use sp_runtime::MultiSigner;
 
 impl Api {
+    /// transfer an amount using a signer `from` to account `to` with `amount` and `tip`
     pub async fn balance_transfer<P>(
         &self,
         from: P,
@@ -54,7 +55,7 @@ impl Api {
         };
 
         self.execute_extrinsic::<P, PlainTipExtrinsicParams, PlainTip,
-            ([u8; 2], GenericAddress, Compact<u128>)>(Some(from), balance_call, None, tx_params)
+            ([u8; 2], GenericAddress, Compact<u128>)>(Some(from), balance_call, tx_params)
             .await
     }
 }
