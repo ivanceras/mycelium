@@ -42,20 +42,25 @@ impl Api {
             Compact(amount),
         );
 
-        let tx_params = if let Some(tip) = tip {
+        if let Some(tip) = tip {
             let genesis_hash = self.genesis_hash();
 
             let tx_params = PlainTipExtrinsicParamsBuilder::new()
                 .tip(tip)
                 .era(Era::Immortal, genesis_hash);
 
-            Some(tx_params)
+            let result = self.sign_and_submit_extrinsic_with_params::<P, PlainTipExtrinsicParams, PlainTip,
+            ([u8; 2], GenericAddress, Compact<u128>)>(Some(from), balance_call, Some(tx_params))
+            .await?;
+            Ok(result)
         } else {
-            None
-        };
-
-        self.execute_extrinsic::<P, PlainTipExtrinsicParams, PlainTip,
-            ([u8; 2], GenericAddress, Compact<u128>)>(Some(from), balance_call, tx_params)
-            .await
+            let result = self
+                .sign_and_submit_extrinsic::<P, ([u8; 2], GenericAddress, Compact<u128>)>(
+                    Some(from),
+                    balance_call,
+                )
+                .await?;
+            Ok(result)
+        }
     }
 }

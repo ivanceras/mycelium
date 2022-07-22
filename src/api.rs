@@ -50,6 +50,8 @@ impl Api {
 
     pub async fn new(url: &str) -> Result<Self, Error> {
         let base_api = BaseApi::new(url);
+
+        //TODO: future join this 3 calls, to make the calls concurrent
         let metadata = match base_api.fetch_metadata().await? {
             Some(metadata) => metadata,
             None => return Err(Error::NoMetadata),

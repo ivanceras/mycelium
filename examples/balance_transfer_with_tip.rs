@@ -20,8 +20,20 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let api = Api::new("http://localhost:9933").await?;
     let result = api
-        .balance_transfer(from, to, 41_500_000_000_000_u128, Some(500_000_000_000))
+        .balance_transfer(
+            from.clone(),
+            to.clone(),
+            41_500_000_000_000_u128,
+            Some(500_000_000_000),
+        )
         .await?;
     println!("result: {:?}", result);
+
+    std::thread::sleep(std::time::Duration::from_millis(1500));
+
+    let result_no_tip = api
+        .balance_transfer(from, to, 40_100_200_300_400_u128, None)
+        .await?;
+    println!("result_no_tip: {:?}", result_no_tip);
     Ok(())
 }
