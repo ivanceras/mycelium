@@ -82,6 +82,24 @@ impl Api {
         MultiSignature: From<P::Signature>,
         Call: Encode + Clone + fmt::Debug,
     {
+        Ok(self
+            .sign_extrinsic_with_extra_and_hash(signer, call, extra, None)
+            .await?)
+    }
+
+    pub async fn sign_extrinsic_with_extra_and_hash<P, Call>(
+        &self,
+        signer: P,
+        call: Call,
+        extra: GenericExtra,
+        head_hash: Option<H256>,
+    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
+    where
+        P: Pair,
+        MultiSigner: From<P::Public>,
+        MultiSignature: From<P::Signature>,
+        Call: Encode + Clone + fmt::Debug,
+    {
         let raw_payload: SignedPayload<Call> = SignedPayload::from_raw(
             call.clone(),
             extra.clone(),
@@ -89,7 +107,7 @@ impl Api {
                 self.runtime_version.spec_version,
                 self.runtime_version.transaction_version,
                 self.genesis_hash,
-                self.genesis_hash,
+                head_hash.unwrap_or(self.genesis_hash),
                 (),
                 (),
                 (),
@@ -105,6 +123,30 @@ impl Api {
             multi_signature,
             extra,
         ))
+    }
+
+    pub async fn sign_extrinsic_with_params_and_hash<P, Params, Tip, Call>(
+        &self,
+        signer: P,
+        call: Call,
+        extrinsic_params: Option<Params::OtherParams>,
+        head_hash: Option<H256>,
+    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
+    where
+        P: Pair,
+        MultiSigner: From<P::Public>,
+        MultiSignature: From<P::Signature>,
+        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
+        u128: From<Tip>,
+        Tip: Encode + Default,
+        Call: Encode + Clone + fmt::Debug,
+    {
+        let nonce = self.get_nonce(&signer).await?;
+        let extra = Self::convert_to_generic_extra::<Params, Tip>(nonce, extrinsic_params);
+        let xt = self
+            .sign_extrinsic_with_extra_and_hash(signer, call, extra, head_hash)
+            .await?;
+        Ok(xt)
     }
 
     pub async fn sign_extrinsic_with_params<P, Params, Tip, Call>(
