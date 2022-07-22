@@ -3,10 +3,7 @@
 use codec::Decode;
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
-use mycelium::{
-    types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
-    Api,
-};
+use mycelium::Api;
 use sp_core::sr25519::Pair;
 use sp_keyring::AccountKeyring;
 
@@ -143,14 +140,15 @@ async fn add_post(api: &Api, post: &str, author: &Pair) -> Result<u32, mycelium:
 
     let bounded_content =
         BoundedVec::try_from(post.as_bytes().to_vec()).expect("Content is too long");
-    let call = ([pallet.index, *call_index], bounded_content);
+    let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) =
+        ([pallet.index, *call_index], bounded_content);
 
     let current_item = get_current_item(api).await?;
 
-    let result = api.execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip,
-            ([u8; 2], BoundedVec<u8, MaxContentLength>),
-            >(Some(author.clone()), call, None, None).await?;
+    let extrinsic = api.sign_extrinsic(author.clone(), call).await?;
+    let result = api.submit_extrinsic(extrinsic).await?;
     println!("result: {:?}", result);
+
     Ok(current_item)
 }
 
@@ -183,19 +181,14 @@ async fn add_comment_to(
     let call_index = pallet.calls.get("comment_on").unwrap();
     let bounded_comment =
         BoundedVec::try_from(comment.as_bytes().to_vec()).expect("Content is too long");
-    let call = ([pallet.index, *call_index], parent_item, bounded_comment);
+    let call: ([u8; 2], u32, BoundedVec<u8, MaxContentLength>) =
+        ([pallet.index, *call_index], parent_item, bounded_comment);
 
     let current_item = get_current_item(api).await?;
 
-    let result = api
-        .execute_extrinsic::<Pair, PlainTipExtrinsicParams, PlainTip, ([u8;2], u32, BoundedVec<u8, MaxContentLength>)>(
-            Some(author.clone()),
-            call,
-            None,
-            None,
-        )
-        .await?;
-
+    let extrinsic = api.sign_extrinsic(author.clone(), call).await?;
+    let result = api.submit_extrinsic(extrinsic).await?;
     println!("comment result: {:?}", result);
+
     Ok(current_item)
 }
