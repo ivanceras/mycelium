@@ -41,18 +41,14 @@ async fn main() -> Result<(), mycelium::Error> {
         .calls
         .get("sudo")
         .expect("function name does not exist");
-    let sudo_call = ([sudo_pallet.index, *sudo_call_index as u8], balance_call);
+    let sudo_call: (
+        [u8; 2],
+        ([u8; 2], GenericAddress, Compact<u128>, Compact<u128>),
+    ) = ([sudo_pallet.index, *sudo_call_index as u8], balance_call);
 
-    let xt = api
-        .compose_extrinsics::<sp_core::sr25519::Pair, PlainTipExtrinsicParams, PlainTip, (
-            [u8; 2],
-            ([u8; 2], GenericAddress, Compact<u128>, Compact<u128>),
-        )>(Some(sudoer), sudo_call, None, None)
-        .await?;
+    let xt = api.sign_extrinsic(sudoer, sudo_call).await?;
 
-    let encoded = xt.hex_encode();
-    println!("encoded: {}", encoded);
-    let result = api.author_submit_extrinsic(&encoded).await?;
+    let result = api.submit_extrinsic(xt).await?;
     println!("result: {:?}", result);
     Ok(())
 }
