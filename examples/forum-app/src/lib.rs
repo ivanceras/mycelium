@@ -151,17 +151,22 @@ impl App {
 
     fn submit_comment(&self, parent_item: ParentItem, new_comment: &str) -> Cmd<Self, Msg> {
         match parent_item {
-            ParentItem::Post(post_id) => self.submit_comment_reply_to_post(post_id, new_comment),
-            ParentItem::Comment(comment_id) => {
-                self.submit_comment_reply_to_comment(comment_id, new_comment)
+            ParentItem::Post(post_id) => {
+                self.submit_comment_reply(post_id, new_comment, Msg::ShowPost(post_id))
             }
+            ParentItem::Comment(comment_id) => self.submit_comment_reply(
+                comment_id,
+                new_comment,
+                Msg::ShowReplyToCommentForm(comment_id),
+            ),
         }
     }
 
-    fn submit_comment_reply_to_post(
+    fn submit_comment_reply(
         &self,
         parent_post_id: u32,
         new_comment: &str,
+        after_msg: Msg,
     ) -> Cmd<Self, Msg> {
         log::info!("Submitting posts..");
         let api = self.api.clone();
@@ -175,39 +180,7 @@ impl App {
                             "Posting a new content successful with tx_hash {:?}",
                             tx_hash
                         );
-                        program.dispatch_with_delay(Msg::ShowPost(parent_post_id), 2000);
-                    }
-                    Err(e) => {
-                        log::error!("Something is wrong when submitting post: {}", e.to_string());
-                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
-                    }
-                }
-            };
-            spawn_local(async_fetch(program))
-        })
-    }
-
-    fn submit_comment_reply_to_comment(
-        &self,
-        parent_comment_id: u32,
-        new_comment: &str,
-    ) -> Cmd<Self, Msg> {
-        log::info!("Submitting posts..");
-        let api = self.api.clone();
-        let new_comment = new_comment.to_owned();
-        Cmd::new(move |program| {
-            let async_fetch = |program: Program<Self, Msg>| async move {
-                let api = api.unwrap();
-                match fetch::add_comment(&api, parent_comment_id, &new_comment).await {
-                    Ok(tx_hash) => {
-                        log::info!(
-                            "Posting a new content successful with tx_hash {:?}",
-                            tx_hash
-                        );
-                        program.dispatch_with_delay(
-                            Msg::ShowReplyToCommentForm(parent_comment_id),
-                            2000,
-                        );
+                        program.dispatch_with_delay(after_msg, 2000);
                     }
                     Err(e) => {
                         log::error!("Something is wrong when submitting post: {}", e.to_string());
