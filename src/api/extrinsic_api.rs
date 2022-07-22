@@ -129,7 +129,7 @@ impl Api {
     }
 
     /// create an UncheckedExtrisic<Call>
-    /// This is a simplified version of compose_extrinsics_with_params
+    /// This is a simplified version of compose_extrinsic_with_params
     /// but has less generics to deal with
     pub async fn compose_extrinsics<P, Call>(
         &self,
@@ -164,7 +164,7 @@ impl Api {
     }
 
     /// create an UncheckedExtrinsic from call with an optional signer
-    pub async fn compose_extrinsics_with_params<P, Params, Tip, Call>(
+    pub async fn compose_extrinsic_with_params<P, Params, Tip, Call>(
         &self,
         signer: Option<P>,
         call: Call,
@@ -197,13 +197,13 @@ impl Api {
         P: Pair,
         Call: Encode + Clone + fmt::Debug,
     {
-        raw_payload.using_encoded(|payload| self.sign(signer, payload))
+        raw_payload.using_encoded(|payload| self.sign_message(signer, payload))
     }
 
     /// sign a bytes with the specified signer
     /// TODO: This should call an external API for the runtime
     /// otherwise, this api acts as if it is a wallet
-    pub fn sign<P>(&self, signer: &P, payload: &[u8]) -> P::Signature
+    pub fn sign_message<P>(&self, signer: &P, payload: &[u8]) -> P::Signature
     where
         P: Pair,
     {
@@ -243,11 +243,7 @@ impl Api {
         Call: Clone + fmt::Debug + Encode,
     {
         let xt = self
-            .compose_extrinsics_with_params::<P, Params, Tip, Call>(
-                Some(signer),
-                call,
-                extrinsic_params,
-            )
+            .sign_extrinsic_with_params::<P, Params, Tip, Call>(signer, call, extrinsic_params)
             .await?;
         Ok(self.submit_extrinsic(xt).await?)
     }
