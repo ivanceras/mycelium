@@ -107,6 +107,27 @@ impl Api {
         ))
     }
 
+    pub async fn sign_extrinsic_with_params<P, Params, Tip, Call>(
+        &self,
+        signer: P,
+        call: Call,
+        extrinsic_params: Option<Params::OtherParams>,
+    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
+    where
+        P: Pair,
+        MultiSigner: From<P::Public>,
+        MultiSignature: From<P::Signature>,
+        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
+        u128: From<Tip>,
+        Tip: Encode + Default,
+        Call: Encode + Clone + fmt::Debug,
+    {
+        let nonce = self.get_nonce(&signer).await?;
+        let extra = Self::convert_to_generic_extra::<Params, Tip>(nonce, extrinsic_params);
+        let xt = self.sign_extrinsic_with_extra(signer, call, extra).await?;
+        Ok(xt)
+    }
+
     /// create an UncheckedExtrisic<Call>
     /// This is a simplified version of compose_extrinsics_with_params
     /// but has less generics to deal with
@@ -160,14 +181,9 @@ impl Api {
     {
         match signer {
             None => Ok(self.unsigned_extrinsic(call)),
-            Some(signer) => {
-                let nonce = self.get_nonce(&signer).await?;
-
-                let extra = Self::convert_to_generic_extra::<Params, Tip>(nonce, extrinsic_params);
-
-                let xt = self.sign_extrinsic_with_extra(signer, call, extra).await?;
-                Ok(xt)
-            }
+            Some(signer) => Ok(self
+                .sign_extrinsic_with_params::<P, Params, Tip, Call>(signer, call, extrinsic_params)
+                .await?),
         }
     }
 

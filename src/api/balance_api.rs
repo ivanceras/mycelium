@@ -54,6 +54,9 @@ impl Api {
             .await?;
             Ok(result)
         } else {
+            //Note: would be exequivalent to calling sign_and_submit_extrisic_with_params and
+            //passing None to the last argument of the function.
+            //This is using the simplified version of test it's usage as well
             let result = self
                 .sign_and_submit_extrinsic::<P, ([u8; 2], GenericAddress, Compact<u128>)>(
                     from,
