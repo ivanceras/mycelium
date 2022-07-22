@@ -46,6 +46,10 @@ impl Api {
             .await
     }
 
+    pub fn pallet_call_index(&self, pallet_name: &str, call_name: &str) -> Result<[u8; 2], Error> {
+        Ok(self.metadata().pallet_call_index(pallet_name, call_name)?)
+    }
+
     pub fn unsigned_extrinsic<Call>(&self, call: Call) -> UncheckedExtrinsicV4<Call>
     where
         Call: Encode,
