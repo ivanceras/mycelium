@@ -50,13 +50,13 @@ impl Api {
                 .era(Era::Immortal, genesis_hash);
 
             let result = self.sign_and_submit_extrinsic_with_params::<P, PlainTipExtrinsicParams, PlainTip,
-            ([u8; 2], GenericAddress, Compact<u128>)>(Some(from), balance_call, Some(tx_params))
+            ([u8; 2], GenericAddress, Compact<u128>)>(from, balance_call, Some(tx_params))
             .await?;
             Ok(result)
         } else {
             let result = self
                 .sign_and_submit_extrinsic::<P, ([u8; 2], GenericAddress, Compact<u128>)>(
-                    Some(from),
+                    from,
                     balance_call,
                 )
                 .await?;

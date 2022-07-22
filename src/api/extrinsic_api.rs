@@ -127,6 +127,21 @@ impl Api {
         }
     }
 
+    fn convert_to_generic_extra<Params, Tip>(
+        nonce: u32,
+        extrinsic_params: Option<Params::OtherParams>,
+    ) -> GenericExtra
+    where
+        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
+        u128: From<Tip>,
+        Tip: Encode + Default,
+    {
+        let other_params: BaseExtrinsicParamsBuilder<Tip> = extrinsic_params.unwrap_or_default();
+        let params: BaseExtrinsicParams<Tip> = BaseExtrinsicParams::new(nonce, other_params);
+        let extra: GenericExtra = GenericExtra::from(params);
+        extra
+    }
+
     /// create an UncheckedExtrinsic from call with an optional signer
     pub async fn compose_extrinsics_with_params<P, Params, Tip, Call>(
         &self,
@@ -148,11 +163,7 @@ impl Api {
             Some(signer) => {
                 let nonce = self.get_nonce(&signer).await?;
 
-                let other_params: BaseExtrinsicParamsBuilder<Tip> =
-                    extrinsic_params.unwrap_or_default();
-                let params: BaseExtrinsicParams<Tip> =
-                    BaseExtrinsicParams::new(nonce, other_params);
-                let extra: GenericExtra = GenericExtra::from(params);
+                let extra = Self::convert_to_generic_extra::<Params, Tip>(nonce, extrinsic_params);
 
                 let xt = self.sign_extrinsic_with_extra(signer, call, extra).await?;
                 Ok(xt)
@@ -187,7 +198,7 @@ impl Api {
     /// with less Generic parameters to deal with
     pub async fn sign_and_submit_extrinsic<P, Call>(
         &self,
-        signer: Option<P>,
+        signer: P,
         call: Call,
     ) -> Result<Option<H256>, Error>
     where
@@ -196,13 +207,13 @@ impl Api {
         MultiSignature: From<P::Signature>,
         Call: Clone + fmt::Debug + Encode,
     {
-        let xt = self.compose_extrinsics::<P, Call>(signer, call).await?;
+        let xt = self.sign_extrinsic::<P, Call>(signer, call).await?;
         Ok(self.submit_extrinsic(xt).await?)
     }
 
     pub async fn sign_and_submit_extrinsic_with_params<P, Params, Tip, Call>(
         &self,
-        signer: Option<P>,
+        signer: P,
         call: Call,
         extrinsic_params: Option<Params::OtherParams>,
     ) -> Result<Option<H256>, Error>
@@ -216,7 +227,11 @@ impl Api {
         Call: Clone + fmt::Debug + Encode,
     {
         let xt = self
-            .compose_extrinsics_with_params::<P, Params, Tip, Call>(signer, call, extrinsic_params)
+            .compose_extrinsics_with_params::<P, Params, Tip, Call>(
+                Some(signer),
+                call,
+                extrinsic_params,
+            )
             .await?;
         Ok(self.submit_extrinsic(xt).await?)
     }
