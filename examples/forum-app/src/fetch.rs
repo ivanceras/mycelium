@@ -132,11 +132,13 @@ pub async fn get_comment_detail(
 }
 
 pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, Error> {
+    log::debug!("getting comment_id: {}", comment_id);
     if let Some(comment) = api
         .fetch_opaque_storage_map(FORUM_MODULE, ALL_COMMENTS, comment_id)
         .await?
     {
         let comment: Option<Comment> = Decode::decode(&mut comment.as_slice()).ok();
+        log::info!("got comment: {:?}", comment);
         Ok(comment)
     } else {
         Ok(None)
@@ -156,6 +158,7 @@ pub async fn add_post(api: &Api, post: &str) -> Result<Option<H256>, Error> {
     let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) = (pallet_call, bounded_content);
 
     let extrinsic = crate::sign_call(api, call).await?;
+    log::info!("added a post..");
     let tx_hash = api.submit_extrinsic(extrinsic).await?;
 
     Ok(tx_hash)
@@ -178,6 +181,7 @@ pub async fn add_comment(
         (pallet_call, parent_item, bounded_content);
 
     let extrinsic = crate::sign_call(api, call).await?;
+    log::debug!("Added a comment to parent_item: {}", parent_item);
     let tx_hash = api.submit_extrinsic(extrinsic).await?;
 
     Ok(tx_hash)

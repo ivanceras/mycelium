@@ -114,6 +114,12 @@ impl Content {
             [div(
                 [class("controls")],
                 [
+                    match parent_item {
+                        ParentItem::Comment(comment_id) => {
+                            text!("Replying to comment_id: {}", comment_id)
+                        }
+                        ParentItem::Post(post_id) => text!("Replying a post with id: {}", post_id),
+                    },
                     textarea(
                         [
                             class("comment-new-content"),
@@ -126,6 +132,10 @@ impl Content {
                         [
                             r#type("submit"),
                             value("add comment"),
+                            // add this key so the program will discard
+                            // this node if we are commenting on a different parent
+                            // and replace the event listener
+                            key(parent_item.item_id()),
                             on_click(move |e| {
                                 e.prevent_default();
                                 Msg::SubmitComment(parent_item)
