@@ -34,12 +34,12 @@ async fn main() -> Result<(), mycelium::Error> {
         true,
     );
 
-    let xt = api.compose_extrinsics::<
+    let xt = api.compose_extrinsics_with_params::<
         sp_core::sr25519::Pair,
         PlainTipExtrinsicParams,
         PlainTip,
         ([u8; 2], GenericAddress, bool),
-    >(Some(from), balance_call, None, None)
+    >(Some(from), balance_call, None)
     .await?;
 
     let encoded = xt.hex_encode();

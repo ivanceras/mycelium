@@ -1,5 +1,5 @@
 //! An example using an offline extrinsic, using the types of the instantiated chain
-#![deny(warnings)]
+#![allow(warnings)]
 use frame_support::BoundedVec;
 use mycelium::{
     types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder},
@@ -37,29 +37,23 @@ async fn main() -> Result<(), mycelium::Error> {
         content: BoundedVec::try_from(b"Hello world post using Call!".to_vec()).unwrap(),
     });
 
-    let xt = api
-        .compose_extrinsics::<sp_core::sr25519::Pair, PlainTipExtrinsicParams, PlainTip, Call>(
-            Some(from),
-            call,
-            Some(head_hash),
-            Some(tx_params),
-        )
+    let extrinsic = api
+        .sign_extrinsic_with_params_and_hash::<sp_core::sr25519::Pair, PlainTipExtrinsicParams, PlainTip, Call>(from, call, Some(tx_params), Some(head_hash))
         .await?;
-
-    let encoded = xt.hex_encode();
-    println!("encoded: {}", encoded);
-    let result = api.author_submit_extrinsic(&encoded).await?;
-    println!("result: {:?}", result);
 
     let current_item: Option<u32> = api
         .fetch_storage_value("ForumModule", "ItemCounter")
         .await?;
     println!("current item: {:?}", current_item);
 
-    let prev_item = current_item.unwrap().saturating_sub(1);
+    let result = api.submit_extrinsic(extrinsic).await?;
+    println!("result: {:?}", result);
+
+    std::thread::sleep(std::time::Duration::from_millis(3000));
+    let current_item = current_item.unwrap_or(0);
 
     let inserted_post: Option<Post<Runtime>> = api
-        .fetch_storage_map("ForumModule", "AllPosts", prev_item)
+        .fetch_storage_map("ForumModule", "AllPosts", current_item)
         .await?;
     println!("inserted-post: {:#?}", inserted_post);
     if let Some(inserted_post) = inserted_post {
