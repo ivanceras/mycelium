@@ -27,7 +27,6 @@ sp-core = { version = "6.0.0", default-features = false, features = ["full_crypt
 sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
 sp-version = { version = "5.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24", features = ["serde", "impl-serde", "std"] }
 sp-std = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
-sp-keyring = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -41,12 +40,13 @@ wasm-bindgen-test = "0.3.30"
 
 [dev-dependencies]
 node-template-runtime = { path = "./substrate-node-template/runtime" }
-pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
-frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24"}
 pretty_env_logger = "0.4.0"
 pallet-forum = { path = "./substrate-node-template/pallets/forum" }
 async-recursion = "1.0.0"
 anyhow = "1.0.58"
+pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
+frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24"}
+sp-keyring = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
 
 [features]
 std = [

@@ -20,9 +20,10 @@ console_log = {version ="0.2", features = ["color"]}
 async-recursion = "1.0.0"
 reqwest = { version = "0.11.10", features = ["json"] }
 anyhow = "1.0.58"
-sauron = { version = "0.50.0" }
+sauron = { version = "0.50.1", path = "../../../sauron" }
 derive_more = "0.99.17"
 thiserror = "1.0.31"
 chrono = { version = "0.4.19", features = ["serde", "wasmbind"] }
+sp-keyring = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.24" }
 
 

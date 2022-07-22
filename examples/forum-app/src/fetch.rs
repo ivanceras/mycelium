@@ -2,7 +2,9 @@ use crate::content::*;
 use crate::Error;
 use async_recursion::async_recursion;
 use codec::Decode;
+use frame_support::traits::Get;
 use frame_support::BoundedVec;
+use mycelium::sp_core::H256;
 use mycelium::Api;
 
 const FORUM_MODULE: &str = "ForumModule";
@@ -144,4 +146,18 @@ pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, 
 pub async fn get_block_hash(api: &Api, block_number: u32) -> Result<Option<String>, Error> {
     let block_hash = api.fetch_block_hash(block_number).await?;
     Ok(block_hash.map(|hash| format!("{:#x}", hash)))
+}
+
+pub async fn add_post(api: &Api, post: &str) -> Result<Option<H256>, Error> {
+    let pallet_call = api.pallet_call_index(FORUM_MODULE, "post_content")?;
+
+    let bounded_content = BoundedVec::try_from(post.as_bytes().to_vec())
+        .or_else(|_e| Err(Error::ContentTooLong(post.len(), MaxContentLength::get())))?;
+
+    let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) = (pallet_call, bounded_content);
+
+    let extrinsic = crate::sign_call(api, call).await?;
+    let tx_hash = api.submit_extrinsic(extrinsic).await?;
+
+    Ok(tx_hash)
 }

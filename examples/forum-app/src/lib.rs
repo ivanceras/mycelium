@@ -1,7 +1,12 @@
 #![deny(warnings)]
+use codec::Encode;
 use content::*;
+use mycelium::sp_core;
+use mycelium::types::extrinsics::UncheckedExtrinsicV4;
 use mycelium::Api;
 use sauron::prelude::*;
+use sp_keyring::AccountKeyring;
+use std::fmt;
 use wasm_bindgen_futures::spawn_local;
 
 const URL: &str = "http://localhost:9933";
@@ -56,6 +61,8 @@ pub enum Error {
     Error404(u32),
     #[error("mycelium Api Error: {0}")]
     MyCeliumError(#[from] mycelium::Error),
+    #[error("Content too long: {0}, max: {1}")]
+    ContentTooLong(usize, u32),
 }
 
 struct App {
@@ -109,6 +116,31 @@ impl App {
                     }
                     Err(e) => {
                         log::error!("Something is wrong when fetching: {}", e.to_string());
+                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                    }
+                }
+            };
+            spawn_local(async_fetch(program))
+        })
+    }
+
+    fn submit_post(&self, new_post: &str) -> Cmd<Self, Msg> {
+        log::info!("Submitting posts..");
+        let api = self.api.clone();
+        let new_post = new_post.to_owned();
+        Cmd::new(move |program| {
+            let async_fetch = |program: Program<Self, Msg>| async move {
+                let api = api.unwrap();
+                match fetch::add_post(&api, &new_post).await {
+                    Ok(tx_hash) => {
+                        log::info!(
+                            "Posting a new content successful with tx_hash {:?}",
+                            tx_hash
+                        );
+                        program.dispatch_with_delay(Msg::FetchPosts, 1000);
+                    }
+                    Err(e) => {
+                        log::error!("Something is wrong when submitting post: {}", e.to_string());
                         program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
                     }
                 }
@@ -245,8 +277,7 @@ impl Application<Msg> for App {
             Msg::SubmitPost => {
                 if let Some(new_post) = &self.new_post {
                     log::info!("A new post submission: \n{}", new_post);
-                    // TODO: submit the post using alice account
-                    Cmd::none()
+                    self.submit_post(new_post)
                 } else {
                     Cmd::none()
                 }
@@ -281,6 +312,17 @@ impl Application<Msg> for App {
             ],
         )
     }
+}
+
+//TODO: This should be hookup to the browser extension
+pub async fn sign_call<Call>(api: &Api, call: Call) -> Result<UncheckedExtrinsicV4<Call>, Error>
+where
+    Call: Encode + Clone + fmt::Debug,
+{
+    // we use alice for now, for simplicity
+    let signer: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
+    let extrinsic = api.sign_extrinsic(signer, call).await?;
+    Ok(extrinsic)
 }
 
 #[wasm_bindgen(start)]
