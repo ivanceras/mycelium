@@ -1,8 +1,10 @@
 //! This example get the values from the storage items from their respective pallets
 #![allow(warnings)]
-use mycelium::sp_core::crypto::AccountId32;
-use mycelium::types::account_info::AccountInfo;
-use mycelium::Api;
+use mycelium::{
+    sp_core::crypto::AccountId32,
+    types::account_info::AccountInfo,
+    Api,
+};
 use pallet_balances::AccountData;
 use sp_keyring::AccountKeyring;
 

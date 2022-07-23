@@ -2,8 +2,10 @@ use crate::Msg;
 pub use comment::*;
 use frame_support::pallet_prelude::ConstU32;
 pub use post::*;
-use sauron::html::attributes;
-use sauron::prelude::*;
+use sauron::{
+    html::attributes,
+    prelude::*,
+};
 
 pub mod comment;
 pub mod post;

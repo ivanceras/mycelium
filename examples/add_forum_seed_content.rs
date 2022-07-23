@@ -1,8 +1,10 @@
 //! just add some entries into the forum
 #![deny(warnings)]
 use codec::Decode;
-use frame_support::pallet_prelude::ConstU32;
-use frame_support::BoundedVec;
+use frame_support::{
+    pallet_prelude::ConstU32,
+    BoundedVec,
+};
 use mycelium::Api;
 use sp_core::sr25519::Pair;
 use sp_keyring::AccountKeyring;

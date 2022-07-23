@@ -2,14 +2,23 @@
 #![deny(warnings)]
 use mycelium::{
     types::extrinsic_params::{
-        PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder,
+        PlainTip,
+        PlainTipExtrinsicParams,
+        PlainTipExtrinsicParamsBuilder,
     },
     Api,
 };
-use node_template_runtime::{BalancesCall, Call, Header};
+use node_template_runtime::{
+    BalancesCall,
+    Call,
+    Header,
+};
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
-use sp_runtime::{generic::Era, MultiAddress};
+use sp_runtime::{
+    generic::Era,
+    MultiAddress,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {

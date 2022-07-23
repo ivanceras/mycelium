@@ -3,12 +3,18 @@
 use frame_support::BoundedVec;
 use mycelium::{
     types::extrinsic_params::{
-        PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder,
+        PlainTip,
+        PlainTipExtrinsicParams,
+        PlainTipExtrinsicParamsBuilder,
     },
     Api,
 };
-use node_template_runtime::Runtime;
-use node_template_runtime::{pallet_forum, Call, Header};
+use node_template_runtime::{
+    pallet_forum,
+    Call,
+    Header,
+    Runtime,
+};
 use pallet_forum::Post;
 use sp_core::H256;
 use sp_keyring::AccountKeyring;

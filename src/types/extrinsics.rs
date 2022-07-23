@@ -18,10 +18,21 @@
 //! Primitives for substrate extrinsics.
 
 use crate::types::extrinsic_params::GenericExtra;
-use codec::{Decode, Encode, Error, Input};
+use codec::{
+    Decode,
+    Encode,
+    Error,
+    Input,
+};
 use sp_runtime::MultiSignature;
-pub use sp_runtime::{AccountId32, MultiAddress};
-use sp_std::{fmt, prelude::*};
+pub use sp_runtime::{
+    AccountId32,
+    MultiAddress,
+};
+use sp_std::{
+    fmt,
+    prelude::*,
+};
 
 pub type AccountIndex = u64;
 
@@ -163,10 +174,19 @@ fn encode_with_vec_prefix<T: Encode, F: Fn(&mut Vec<u8>)>(
 mod tests {
     use super::*;
     use crate::types::extrinsic_params::{
-        BaseExtrinsicParams, ExtrinsicParams, PlainTipExtrinsicParamsBuilder,
+        BaseExtrinsicParams,
+        ExtrinsicParams,
+        PlainTipExtrinsicParamsBuilder,
     };
-    use sp_core::{Pair, H256 as Hash};
-    use sp_runtime::{generic::Era, testing::sr25519, MultiSignature};
+    use sp_core::{
+        Pair,
+        H256 as Hash,
+    };
+    use sp_runtime::{
+        generic::Era,
+        testing::sr25519,
+        MultiSignature,
+    };
 
     #[test]
     fn encode_decode_roundtrip_works() {

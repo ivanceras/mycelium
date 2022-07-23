@@ -1,5 +1,8 @@
 //#![deny(warnings)]
-use mycelium::{Api, Metadata};
+use mycelium::{
+    Api,
+    Metadata,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {

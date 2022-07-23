@@ -4,16 +4,28 @@ use crate::{
     types::{
         account_info::AccountInfo,
         extrinsic_params::{
-            BaseExtrinsicParams, BaseExtrinsicParamsBuilder, ExtrinsicParams,
-            GenericExtra, SignedPayload,
+            BaseExtrinsicParams,
+            BaseExtrinsicParamsBuilder,
+            ExtrinsicParams,
+            GenericExtra,
+            SignedPayload,
         },
-        extrinsics::{GenericAddress, UncheckedExtrinsicV4},
+        extrinsics::{
+            GenericAddress,
+            UncheckedExtrinsicV4,
+        },
     },
 };
 use codec::Encode;
-use sp_core::{crypto::Pair, H256};
+use sp_core::{
+    crypto::Pair,
+    H256,
+};
 use sp_runtime::{
-    traits::IdentifyAccount, AccountId32, MultiSignature, MultiSigner,
+    traits::IdentifyAccount,
+    AccountId32,
+    MultiSignature,
+    MultiSigner,
 };
 use std::fmt;
 
@@ -299,13 +311,15 @@ impl Api {
     {
         match signer {
             None => Ok(self.unsigned_extrinsic(call)),
-            Some(signer) => Ok(self
-                .sign_extrinsic_with_params::<P, Params, Tip, Call>(
-                    signer,
-                    call,
-                    extrinsic_params,
-                )
-                .await?),
+            Some(signer) => {
+                Ok(self
+                    .sign_extrinsic_with_params::<P, Params, Tip, Call>(
+                        signer,
+                        call,
+                        extrinsic_params,
+                    )
+                    .await?)
+            }
         }
     }
 

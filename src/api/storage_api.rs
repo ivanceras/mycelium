@@ -1,7 +1,16 @@
-use crate::{api::Api, utils::FromHexStr, Error};
-use codec::{Decode, Encode};
-use scale_info::form::PortableForm;
-use scale_info::Type;
+use crate::{
+    api::Api,
+    utils::FromHexStr,
+    Error,
+};
+use codec::{
+    Decode,
+    Encode,
+};
+use scale_info::{
+    form::PortableForm,
+    Type,
+};
 use sp_core::storage::StorageKey;
 
 impl Api {

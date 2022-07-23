@@ -1,20 +1,29 @@
 //! Balance transfer, set_balance api
-use crate::types::extrinsic_params::PlainTipExtrinsicParamsBuilder;
 use crate::{
     error::Error,
     types::{
-        extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
+        extrinsic_params::{
+            PlainTip,
+            PlainTipExtrinsicParams,
+            PlainTipExtrinsicParamsBuilder,
+        },
         extrinsics::GenericAddress,
     },
     Api,
 };
 use codec::Compact;
-use sp_core::crypto::AccountId32;
-use sp_core::crypto::Pair;
-use sp_core::H256;
-use sp_runtime::generic::Era;
-use sp_runtime::MultiSignature;
-use sp_runtime::MultiSigner;
+use sp_core::{
+    crypto::{
+        AccountId32,
+        Pair,
+    },
+    H256,
+};
+use sp_runtime::{
+    generic::Era,
+    MultiSignature,
+    MultiSigner,
+};
 
 const BALANCES: &str = "Balances";
 

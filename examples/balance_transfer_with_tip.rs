@@ -1,7 +1,9 @@
 //! This example transfer some amount from Alice to Charlie
 #![deny(warnings)]
-use mycelium::sp_core::crypto::AccountId32;
-use mycelium::Api;
+use mycelium::{
+    sp_core::crypto::AccountId32,
+    Api,
+};
 use sp_keyring::AccountKeyring;
 
 #[tokio::main]

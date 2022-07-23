@@ -1,8 +1,13 @@
 pub use super::comment::*;
-use crate::util;
-use crate::Msg;
-use crate::*;
-use codec::{Decode, Encode};
+use crate::{
+    util,
+    Msg,
+    *,
+};
+use codec::{
+    Decode,
+    Encode,
+};
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
 use sauron::html::attributes;
@@ -29,18 +34,23 @@ impl PostDetail {
     fn link(&self) -> String {
         self.post.link()
     }
+
     fn post_id(&self) -> u32 {
         self.post.post_id
     }
+
     fn author(&self) -> String {
         self.post.author()
     }
+
     fn author_id(&self) -> AccountId32 {
         self.post.author.clone()
     }
+
     fn time_ago(&self) -> String {
         self.post.time_ago()
     }
+
     fn block_number(&self) -> u32 {
         self.post.block_number
     }
@@ -148,9 +158,11 @@ impl Post {
     pub fn link(&self) -> String {
         format!("/post/{}", self.post_id)
     }
+
     fn author(&self) -> String {
         self.author.to_string()
     }
+
     fn time_ago(&self) -> String {
         util::timestamp_ago(self.timestamp)
     }

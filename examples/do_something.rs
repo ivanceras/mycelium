@@ -1,6 +1,9 @@
 //! This exampel call on an example pallet TemplateModule::do_something function
 #![deny(warnings)]
-use mycelium::{Api, Metadata};
+use mycelium::{
+    Api,
+    Metadata,
+};
 use sp_keyring::AccountKeyring;
 
 #[tokio::main]

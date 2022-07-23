@@ -1,7 +1,12 @@
-use crate::util;
-use crate::Msg;
-use crate::*;
-use codec::{Decode, Encode};
+use crate::{
+    util,
+    Msg,
+    *,
+};
+use codec::{
+    Decode,
+    Encode,
+};
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
 use std::borrow::Cow;
@@ -27,9 +32,11 @@ impl CommentDetail {
     pub fn content(&self) -> Cow<'_, str> {
         self.comment.content()
     }
+
     pub fn comment_id(&self) -> u32 {
         self.comment.comment_id
     }
+
     fn link(&self) -> String {
         self.comment.link()
     }
@@ -37,15 +44,19 @@ impl CommentDetail {
     pub fn block_link(&self) -> String {
         format!("{}/{}", crate::BLOCK_EXPLORER, self.block_hash)
     }
+
     pub fn author(&self) -> String {
         self.comment.author()
     }
+
     fn author_id(&self) -> AccountId32 {
         self.comment.author.clone()
     }
+
     pub fn time_ago(&self) -> String {
         self.comment.time_ago()
     }
+
     pub fn block_number(&self) -> u32 {
         self.comment.block_number
     }
@@ -128,12 +139,15 @@ impl Comment {
     pub fn content(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.content)
     }
+
     pub fn author(&self) -> String {
         self.author.to_string()
     }
+
     pub fn time_ago(&self) -> String {
         util::timestamp_ago(self.timestamp)
     }
+
     pub fn link(&self) -> String {
         format!("/comment/{}", self.comment_id)
     }

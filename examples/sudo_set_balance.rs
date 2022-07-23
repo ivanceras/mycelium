@@ -4,10 +4,14 @@
 use codec::Compact;
 use mycelium::{
     types::{
-        extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
+        extrinsic_params::{
+            PlainTip,
+            PlainTipExtrinsicParams,
+        },
         extrinsics::GenericAddress,
     },
-    Api, Metadata,
+    Api,
+    Metadata,
 };
 use sp_keyring::AccountKeyring;
 

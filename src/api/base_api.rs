@@ -1,10 +1,24 @@
-use crate::{error::Error, types::metadata::Metadata, utils::FromHexStr};
+use crate::{
+    error::Error,
+    types::metadata::Metadata,
+    utils::FromHexStr,
+};
 use frame_metadata::RuntimeMetadataPrefixed;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sp_core::{Decode, H256};
+use serde::{
+    de::DeserializeOwned,
+    Deserialize,
+    Serialize,
+};
+use sp_core::{
+    Decode,
+    H256,
+};
 use sp_runtime::{
     generic::SignedBlock,
-    traits::{Block, Header},
+    traits::{
+        Block,
+        Header,
+    },
 };
 use sp_version::RuntimeVersion;
 

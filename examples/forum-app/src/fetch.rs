@@ -1,14 +1,24 @@
-use crate::content::*;
-use crate::Error;
+use crate::{
+    content::*,
+    Error,
+};
 use async_recursion::async_recursion;
-use codec::Compact;
-use codec::Decode;
-use frame_support::traits::Get;
-use frame_support::BoundedVec;
-use mycelium::sp_core::crypto::AccountId32;
-use mycelium::sp_core::H256;
-use mycelium::types::extrinsics::GenericAddress;
-use mycelium::Api;
+use codec::{
+    Compact,
+    Decode,
+};
+use frame_support::{
+    traits::Get,
+    BoundedVec,
+};
+use mycelium::{
+    sp_core::{
+        crypto::AccountId32,
+        H256,
+    },
+    types::extrinsics::GenericAddress,
+    Api,
+};
 
 const FORUM_MODULE: &str = "ForumModule";
 const ALL_POSTS: &str = "AllPosts";

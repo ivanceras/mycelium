@@ -1,6 +1,10 @@
 //! This example transfer all of Bob balance units to Charlie
 #![deny(warnings)]
-use mycelium::{types::extrinsics::GenericAddress, Api, Metadata};
+use mycelium::{
+    types::extrinsics::GenericAddress,
+    Api,
+    Metadata,
+};
 use sp_keyring::AccountKeyring;
 
 #[tokio::main]

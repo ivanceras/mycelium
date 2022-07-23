@@ -1,20 +1,32 @@
 //! Calling function alice a custom pallet
 #![allow(warnings)]
 use async_recursion::async_recursion;
-use frame_support::pallet_prelude::ConstU32;
-use frame_support::BoundedVec;
-use mycelium::sp_core::crypto::AccountId32;
+use frame_support::{
+    pallet_prelude::ConstU32,
+    BoundedVec,
+};
 use mycelium::{
-    types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams},
+    sp_core::crypto::AccountId32,
+    types::extrinsic_params::{
+        PlainTip,
+        PlainTipExtrinsicParams,
+    },
     Api,
 };
 use node_template_runtime::Runtime;
-use pallet_forum::Comment;
-use pallet_forum::Post;
-use sp_core::crypto::Ss58Codec;
-use sp_core::Pair;
+use pallet_forum::{
+    Comment,
+    Post,
+};
+use sp_core::{
+    crypto::Ss58Codec,
+    Pair,
+};
 use sp_keyring::AccountKeyring;
-use std::{thread, time};
+use std::{
+    thread,
+    time,
+};
 
 type MaxComments = <Runtime as pallet_forum::Config>::MaxComments;
 
