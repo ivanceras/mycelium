@@ -5,6 +5,7 @@ use crate::*;
 use codec::{Decode, Encode};
 use frame_support::BoundedVec;
 use mycelium::sp_core::crypto::AccountId32;
+use sauron::html::attributes;
 use std::borrow::Cow;
 
 #[derive(Debug)]
@@ -34,6 +35,9 @@ impl PostDetail {
     fn author(&self) -> String {
         self.post.author()
     }
+    fn author_id(&self) -> AccountId32 {
+        self.post.author.clone()
+    }
     fn time_ago(&self) -> String {
         self.post.time_ago()
     }
@@ -61,6 +65,25 @@ impl PostDetail {
         )
     }
 
+    pub fn view_reward_author(author: AccountId32) -> Node<Msg> {
+        a(
+            [
+                key!("reward-{}", author.to_string()),
+                class("reward-author"),
+                href(format!("#reward-author:{}", author.to_string())),
+                attributes::title(format!(
+                    "send {} units  as reward to the post author",
+                    crate::REWARD_AMOUNT
+                )),
+                on_click(move |e| {
+                    e.prevent_default();
+                    Msg::RewardAuthor(author.clone())
+                }),
+            ],
+            [text("reward")],
+        )
+    }
+
     pub fn view_as_summary(&self) -> Node<Msg> {
         let post_id = self.post_id();
         div(
@@ -81,6 +104,7 @@ impl PostDetail {
                             ],
                             [text!("by: {}", self.author())],
                         ),
+                        Self::view_reward_author(self.author_id()),
                         a(
                             [href(self.block_link())],
                             [text!("at: {}", self.block_number())],

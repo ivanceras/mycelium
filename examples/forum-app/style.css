@@ -385,3 +385,7 @@ form.post-new, form.comment-new{
     font-size: 12pt;
     text-decoration: underline;
 }
+
+.reply-text-info {
+    font-size: 12pt;
+}

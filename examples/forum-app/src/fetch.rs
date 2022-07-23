@@ -191,8 +191,7 @@ pub async fn add_comment(
 }
 
 /// send some certain amount to this user
-#[allow(unused)]
-pub async fn send_token(api: &Api, to: AccountId32, amount: u128) -> Result<Option<H256>, Error> {
+pub async fn send_reward(api: &Api, to: AccountId32, amount: u128) -> Result<Option<H256>, Error> {
     let balance_transfer_call_index: [u8; 2] = api.pallet_call_index("Balances", "transfer")?;
     let balance_transfer_call: ([u8; 2], GenericAddress, Compact<u128>) = (
         balance_transfer_call_index,

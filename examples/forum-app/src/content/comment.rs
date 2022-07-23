@@ -40,6 +40,9 @@ impl CommentDetail {
     pub fn author(&self) -> String {
         self.comment.author()
     }
+    fn author_id(&self) -> AccountId32 {
+        self.comment.author.clone()
+    }
     pub fn time_ago(&self) -> String {
         self.comment.time_ago()
     }
@@ -84,6 +87,7 @@ impl CommentDetail {
                     [class("comment-stats")],
                     [
                         a([], [text!("by: {}", self.author())]),
+                        PostDetail::view_reward_author(self.author_id()),
                         a(
                             [href(self.block_link())],
                             [text!("at: {}", self.block_number())],

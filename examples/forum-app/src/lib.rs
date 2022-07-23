@@ -1,7 +1,9 @@
 #![deny(warnings)]
+use crate::sp_core::H256;
 use codec::Encode;
 use content::*;
 use mycelium::sp_core;
+use mycelium::sp_core::crypto::AccountId32;
 use mycelium::types::extrinsics::UncheckedExtrinsicV4;
 use mycelium::Api;
 use sauron::prelude::*;
@@ -12,6 +14,7 @@ use wasm_bindgen_futures::spawn_local;
 const URL: &str = "http://localhost:9933";
 const BLOCK_EXPLORER: &str =
     "https://polkadot.js.org/apps/?rpc=ws://127.0.0.1:9944#/explorer/query";
+const REWARD_AMOUNT: u128 = 1_000_000_000_000;
 
 mod content;
 mod fetch;
@@ -49,6 +52,12 @@ pub enum Msg {
     /// The program will use the `new_post` field of App and use it as input for new post
     /// submission
     SubmitPost,
+    /// The user clicks on the `reward` button next to the author id
+    /// The program will then use the fix reward amount to send tokens from the user to the post
+    /// author's account
+    RewardAuthor(AccountId32),
+    /// The porocessing of reward sending is done
+    RewardFinish(H256),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -181,6 +190,30 @@ impl App {
                             tx_hash
                         );
                         program.dispatch_with_delay(after_msg, 2000);
+                    }
+                    Err(e) => {
+                        log::error!("Something is wrong when submitting post: {}", e.to_string());
+                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                    }
+                }
+            };
+            spawn_local(async_fetch(program))
+        })
+    }
+
+    fn process_reward_author(&self, author: AccountId32, reward_amount: u128) -> Cmd<Self, Msg> {
+        log::info!("Rewarding author {} with {}..", author, reward_amount);
+        let api = self.api.clone();
+        Cmd::new(move |program| {
+            let async_fetch = |program: Program<Self, Msg>| async move {
+                let api = api.unwrap();
+                match fetch::send_reward(&api, author, reward_amount).await {
+                    Ok(tx_hash) => {
+                        log::info!("Author rewarded with a tx_hash {:?}", tx_hash);
+                        program.dispatch_with_delay(
+                            Msg::RewardFinish(tx_hash.expect("must have the hash")),
+                            2000,
+                        );
                     }
                     Err(e) => {
                         log::error!("Something is wrong when submitting post: {}", e.to_string());
@@ -327,6 +360,14 @@ impl Application<Msg> for App {
                 } else {
                     Cmd::none()
                 }
+            }
+            Msg::RewardAuthor(author) => self.process_reward_author(author, REWARD_AMOUNT),
+            Msg::RewardFinish(tx_hash) => {
+                log::info!("Reward is sent with tx_hash: {}", tx_hash);
+                sauron::window()
+                    .alert_with_message("Reward sent!")
+                    .expect("must show the message");
+                Cmd::none()
             }
         }
     }

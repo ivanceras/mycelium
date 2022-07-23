@@ -115,12 +115,15 @@ impl Content {
             [div(
                 [class("controls")],
                 [
-                    match parent_item {
-                        ParentItem::Comment(comment_id) => {
-                            text!("Replying to comment_id: {}", comment_id)
-                        }
-                        ParentItem::Post(post_id) => text!("Replying a post with id: {}", post_id),
-                    },
+                    div(
+                        [class("reply-text-info")],
+                        [match parent_item {
+                            ParentItem::Comment(comment_id) => {
+                                text!("Replying to comment_id: {}", comment_id)
+                            }
+                            ParentItem::Post(post_id) => text!("Replying to post_id: {}", post_id),
+                        }],
+                    ),
                     textarea(
                         [
                             class("comment-new-content"),
