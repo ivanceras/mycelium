@@ -1,10 +1,13 @@
 use crate::content::*;
 use crate::Error;
 use async_recursion::async_recursion;
+use codec::Compact;
 use codec::Decode;
 use frame_support::traits::Get;
 use frame_support::BoundedVec;
+use mycelium::sp_core::crypto::AccountId32;
 use mycelium::sp_core::H256;
+use mycelium::types::extrinsics::GenericAddress;
 use mycelium::Api;
 
 const FORUM_MODULE: &str = "ForumModule";
@@ -184,5 +187,21 @@ pub async fn add_comment(
     log::debug!("Added a comment to parent_item: {}", parent_item);
     let tx_hash = api.submit_extrinsic(extrinsic).await?;
 
+    Ok(tx_hash)
+}
+
+/// send some certain amount to this user
+#[allow(unused)]
+pub async fn send_token(api: &Api, to: AccountId32, amount: u128) -> Result<Option<H256>, Error> {
+    let balance_transfer_call_index: [u8; 2] = api.pallet_call_index("Balances", "transfer")?;
+    let balance_transfer_call: ([u8; 2], GenericAddress, Compact<u128>) = (
+        balance_transfer_call_index,
+        GenericAddress::Id(to),
+        Compact(amount),
+    );
+
+    let extrinsic = crate::sign_call(api, balance_transfer_call).await?;
+    let tx_hash = api.submit_extrinsic(extrinsic).await?;
+    log::debug!("Sent some coins to with a tx_hash: {:?}", tx_hash);
     Ok(tx_hash)
 }

@@ -136,7 +136,7 @@ impl Content {
                             // add this key so the program will discard
                             // this node if we are commenting on a different parent
                             // and replace the event listener
-                            key(parent_item.item_id()),
+                            key!("parent-{}", parent_item.item_id()),
                             on_click(move |e| {
                                 e.prevent_default();
                                 Msg::SubmitComment(parent_item)

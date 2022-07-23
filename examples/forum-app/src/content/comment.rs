@@ -90,7 +90,7 @@ impl CommentDetail {
                         ),
                         a(
                             [
-                                key(comment_id),
+                                key!("time-{}", comment_id),
                                 href(self.link()),
                                 on_click(move |e| {
                                     e.prevent_default();
@@ -104,7 +104,7 @@ impl CommentDetail {
                 a(
                     [
                         class("comment-reply-btn"),
-                        key(comment_id),
+                        key!("reply-{}", comment_id),
                         href(self.link()),
                         on_click(move |e| {
                             e.prevent_default();
