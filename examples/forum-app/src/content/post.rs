@@ -72,6 +72,7 @@ impl PostDetail {
                     [
                         a(
                             [
+                                key(post_id),
                                 href(self.link()),
                                 on_click(move |e| {
                                     e.prevent_default();
@@ -86,6 +87,7 @@ impl PostDetail {
                         ),
                         a(
                             [
+                                key(post_id),
                                 href(self.link()),
                                 on_click(move |e| {
                                     e.prevent_default();
@@ -96,6 +98,7 @@ impl PostDetail {
                         ),
                         a(
                             [
+                                key(post_id),
                                 href(self.link()),
                                 on_click(move |e| {
                                     e.prevent_default();

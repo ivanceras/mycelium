@@ -92,6 +92,7 @@ impl Content {
                         [
                             r#type("submit"),
                             value("submit"),
+                            key("submit-new-post"),
                             on_click(move |e| {
                                 e.prevent_default();
                                 Msg::SubmitPost

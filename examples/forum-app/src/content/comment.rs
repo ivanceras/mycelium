@@ -88,12 +88,23 @@ impl CommentDetail {
                             [href(self.block_link())],
                             [text!("at: {}", self.block_number())],
                         ),
-                        a([], [text!("{} ago", self.time_ago())]),
+                        a(
+                            [
+                                key(comment_id),
+                                href(self.link()),
+                                on_click(move |e| {
+                                    e.prevent_default();
+                                    Msg::ShowReplyToCommentForm(comment_id)
+                                }),
+                            ],
+                            [text!("{} ago", self.time_ago())],
+                        ),
                     ],
                 ),
                 a(
                     [
                         class("comment-reply-btn"),
+                        key(comment_id),
                         href(self.link()),
                         on_click(move |e| {
                             e.prevent_default();
