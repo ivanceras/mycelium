@@ -8,6 +8,7 @@ pub use types::metadata::Metadata;
 pub use codec;
 pub use frame_metadata;
 pub use sp_core;
+pub use sp_runtime;
 pub use sp_version;
 
 mod api;

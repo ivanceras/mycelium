@@ -16,7 +16,7 @@ use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSignature, MultiSign
 use std::fmt;
 
 impl Api {
-    pub fn signer_account<P>(&self, signer: &P) -> AccountId32
+    pub fn signer_account<P>(signer: &P) -> AccountId32
     where
         P: Pair,
         MultiSigner: From<P::Public>,
@@ -25,22 +25,26 @@ impl Api {
         multi_signer.into_account()
     }
 
-    pub async fn get_nonce<P>(&self, signer: &P) -> Result<u32, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-    {
-        let signer_account = self.signer_account(signer);
-        let account_info = self.get_account_info(signer_account).await?;
+    pub async fn get_nonce_for_account(&self, account: &AccountId32) -> Result<u32, Error> {
+        let account_info = self.get_account_info(account).await?;
         match account_info {
             None => Ok(0),
             Some(account_info) => Ok(account_info.nonce),
         }
     }
 
+    pub async fn get_nonce<P>(&self, signer: &P) -> Result<u32, Error>
+    where
+        P: Pair,
+        MultiSigner: From<P::Public>,
+    {
+        let signer_account = Self::signer_account(signer);
+        self.get_nonce_for_account(&signer_account).await
+    }
+
     pub async fn get_account_info(
         &self,
-        account_id: AccountId32,
+        account_id: &AccountId32,
     ) -> Result<Option<AccountInfo>, Error> {
         self.fetch_storage_map("System", "Account", account_id)
             .await
@@ -68,9 +72,7 @@ impl Api {
         MultiSignature: From<P::Signature>,
         Call: Encode + Clone + fmt::Debug,
     {
-        let nonce = self.get_nonce(&signer).await?;
-        let extra: GenericExtra = GenericExtra::immortal_with_nonce_and_tip(nonce, 0);
-        let xt = self.sign_extrinsic_with_extra(signer, call, extra).await?;
+        let xt = self.sign_extrinsic_with_extra(signer, call, None).await?;
         Ok(xt)
     }
 
@@ -78,7 +80,7 @@ impl Api {
         &self,
         signer: P,
         call: Call,
-        extra: GenericExtra,
+        extra: Option<GenericExtra>,
     ) -> Result<UncheckedExtrinsicV4<Call>, Error>
     where
         P: Pair,
@@ -86,9 +88,62 @@ impl Api {
         MultiSignature: From<P::Signature>,
         Call: Encode + Clone + fmt::Debug,
     {
+        let nonce = self.get_nonce(&signer).await?;
+        let extra: GenericExtra =
+            extra.unwrap_or(GenericExtra::immortal_with_nonce_and_tip(nonce, 0));
         Ok(self
             .sign_extrinsic_with_extra_and_hash(signer, call, extra, None)
             .await?)
+    }
+
+    pub fn compose_payload_with_extra<Call>(
+        &self,
+        call: Call,
+        extra: GenericExtra,
+        head_hash: Option<H256>,
+    ) -> Result<SignedPayload<Call>, Error>
+    where
+        Call: Encode + Clone + fmt::Debug,
+    {
+        let raw_payload: SignedPayload<Call> = SignedPayload::from_raw(
+            call,
+            extra,
+            (
+                self.runtime_version.spec_version,
+                self.runtime_version.transaction_version,
+                self.genesis_hash,
+                head_hash.unwrap_or(self.genesis_hash),
+                (),
+                (),
+                (),
+            ),
+        );
+        Ok(raw_payload)
+    }
+
+    pub fn sign_payload<P, Call>(
+        signer: P,
+        raw_payload: SignedPayload<Call>,
+    ) -> Result<MultiSignature, Error>
+    where
+        P: Pair,
+        MultiSigner: From<P::Public>,
+        MultiSignature: From<P::Signature>,
+        Call: Encode + Clone + fmt::Debug,
+    {
+        let signature: P::Signature =
+            raw_payload.using_encoded(|payload| Self::sign_message(&signer, payload));
+        let multi_signature = MultiSignature::from(signature);
+        Ok(multi_signature)
+    }
+
+    pub fn derive_signer_address<P>(signer: &P) -> GenericAddress
+    where
+        P: Pair,
+        MultiSigner: From<P::Public>,
+    {
+        let signer_account = Self::signer_account(signer);
+        GenericAddress::from(signer_account)
     }
 
     pub async fn sign_extrinsic_with_extra_and_hash<P, Call>(
@@ -104,26 +159,15 @@ impl Api {
         MultiSignature: From<P::Signature>,
         Call: Encode + Clone + fmt::Debug,
     {
-        let raw_payload: SignedPayload<Call> = SignedPayload::from_raw(
-            call.clone(),
-            extra.clone(),
-            (
-                self.runtime_version.spec_version,
-                self.runtime_version.transaction_version,
-                self.genesis_hash,
-                head_hash.unwrap_or(self.genesis_hash),
-                (),
-                (),
-                (),
-            ),
-        );
-        let signature = self.sign_raw_payload(&signer, raw_payload);
+        let raw_payload: SignedPayload<Call> =
+            self.compose_payload_with_extra(call.clone(), extra.clone(), head_hash)?;
 
-        let multi_signer = MultiSigner::from(signer.public());
-        let multi_signature = MultiSignature::from(signature);
+        let signer_address = Self::derive_signer_address(&signer);
+        let multi_signature = Self::sign_payload(signer, raw_payload)?;
+
         Ok(UncheckedExtrinsicV4::new_signed(
             call,
-            GenericAddress::from(multi_signer.into_account()),
+            signer_address,
             multi_signature,
             extra,
         ))
@@ -146,6 +190,7 @@ impl Api {
         Call: Encode + Clone + fmt::Debug,
     {
         let nonce = self.get_nonce(&signer).await?;
+        println!("nonce: {}", nonce);
         let extra = Self::convert_to_generic_extra::<Params, Tip>(nonce, extrinsic_params);
         let xt = self
             .sign_extrinsic_with_extra_and_hash(signer, call, extra, head_hash)
@@ -169,8 +214,11 @@ impl Api {
         Call: Encode + Clone + fmt::Debug,
     {
         let nonce = self.get_nonce(&signer).await?;
+        println!("nonce: {}", nonce);
         let extra = Self::convert_to_generic_extra::<Params, Tip>(nonce, extrinsic_params);
-        let xt = self.sign_extrinsic_with_extra(signer, call, extra).await?;
+        let xt = self
+            .sign_extrinsic_with_extra(signer, call, Some(extra))
+            .await?;
         Ok(xt)
     }
 
@@ -233,23 +281,10 @@ impl Api {
         }
     }
 
-    /// sign a payload
-    pub fn sign_raw_payload<P, Call>(
-        &self,
-        signer: &P,
-        raw_payload: SignedPayload<Call>,
-    ) -> P::Signature
-    where
-        P: Pair,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        raw_payload.using_encoded(|payload| self.sign_message(signer, payload))
-    }
-
     /// sign a bytes with the specified signer
     /// TODO: This should call an external API for the runtime
     /// otherwise, this api acts as if it is a wallet
-    pub fn sign_message<P>(&self, signer: &P, payload: &[u8]) -> P::Signature
+    pub fn sign_message<P>(signer: &P, payload: &[u8]) -> P::Signature
     where
         P: Pair,
     {
@@ -304,5 +339,34 @@ impl Api {
     {
         let encoded = xt.hex_encode();
         Ok(self.author_submit_extrinsic(&encoded).await?)
+    }
+
+    /// a simpler version of signing a call, with no tip, no perio, no head_hash
+    pub async fn sign_call_with_message_signer<Call, SignFn, R>(
+        &self,
+        signer_account: AccountId32,
+        signing_function: SignFn,
+        call: Call,
+    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
+    where
+        Call: Encode + Clone + fmt::Debug,
+        SignFn: Fn(&[u8]) -> R,
+        MultiSignature: From<R>,
+    {
+        let nonce = self.get_nonce_for_account(&signer_account).await?;
+        let signer_address = GenericAddress::from(signer_account);
+        let extra = GenericExtra::immortal_with_nonce_and_tip(nonce, 0);
+        let raw_payload: SignedPayload<Call> =
+            self.compose_payload_with_extra(call.clone(), extra.clone(), None)?;
+
+        let signature = raw_payload.using_encoded(signing_function);
+        let multi_signature = MultiSignature::from(signature);
+
+        Ok(UncheckedExtrinsicV4::new_signed(
+            call,
+            signer_address,
+            multi_signature,
+            extra,
+        ))
     }
 }
