@@ -4,6 +4,7 @@ use codec::Encode;
 use content::*;
 use mycelium::sp_core;
 use mycelium::sp_core::crypto::AccountId32;
+use mycelium::sp_core::Pair;
 use mycelium::types::extrinsics::UncheckedExtrinsicV4;
 use mycelium::Api;
 use sauron::prelude::*;
@@ -401,14 +402,19 @@ impl Application<Msg> for App {
     }
 }
 
-//TODO: This should be hookup to the browser extension
+/// TODO: This should be hookup to the browser extension
 pub async fn sign_call<Call>(api: &Api, call: Call) -> Result<UncheckedExtrinsicV4<Call>, Error>
 where
     Call: Encode + Clone + fmt::Debug,
 {
     // we use alice for now, for simplicity
     let signer: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
-    let extrinsic = api.sign_extrinsic(signer, call).await?;
+    let signer_account = Api::signer_account(&signer);
+
+    let sign_fn = |payload: &[u8]| signer.sign(payload);
+    let extrinsic = api
+        .sign_call_with_message_signer(signer_account, sign_fn, call)
+        .await?;
     Ok(extrinsic)
 }
 

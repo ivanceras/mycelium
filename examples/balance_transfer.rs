@@ -30,7 +30,7 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let api = Api::new("http://localhost:9933").await?;
 
-    let info = api.get_account_info(alice_account_id).await?;
+    let info = api.get_account_info(&alice_account_id).await?;
     println!("account info: {:#?}", info);
 
     let result = api
