@@ -5,7 +5,6 @@ use content::*;
 use mycelium::sp_core;
 use mycelium::sp_core::crypto::AccountId32;
 use mycelium::sp_core::Pair;
-use mycelium::types::extrinsics::UncheckedExtrinsicV4;
 use mycelium::Api;
 use sauron::prelude::*;
 use sp_keyring::AccountKeyring;
@@ -405,7 +404,7 @@ impl Application<Msg> for App {
 }
 
 /// TODO: This should be hookup to the browser extension
-pub async fn sign_call<Call>(api: &Api, call: Call) -> Result<UncheckedExtrinsicV4<Call>, Error>
+pub async fn sign_call_and_encode<Call>(api: &Api, call: Call) -> Result<String, Error>
 where
     Call: Encode + Clone + fmt::Debug,
 {
@@ -417,7 +416,8 @@ where
     let extrinsic = api
         .sign_call_with_message_signer(signer_account, sign_fn, call)
         .await?;
-    Ok(extrinsic)
+    let encoded = extrinsic.hex_encode();
+    Ok(encoded)
 }
 
 #[wasm_bindgen(start)]

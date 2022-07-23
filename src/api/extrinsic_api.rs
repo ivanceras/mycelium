@@ -338,7 +338,7 @@ impl Api {
         Call: Clone + fmt::Debug + Encode,
     {
         let encoded = xt.hex_encode();
-        Ok(self.author_submit_extrinsic(&encoded).await?)
+        Ok(self.author_submit_extrinsic(encoded).await?)
     }
 
     /// a simpler version of signing a call, with no tip, no perio, no head_hash
