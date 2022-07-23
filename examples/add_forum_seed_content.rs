@@ -123,6 +123,51 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
+    more_seed(&api, &alice, &bob).await?;
+    Ok(())
+}
+
+async fn more_seed(api: &Api, alice: &Pair, bob: &Pair) -> Result<(), mycelium::Error> {
+    let chain = vec![
+        "Gordon Ramsay doesn't like being called \"mate\"",
+        "I'm not your mate buddy",
+        "I'm not your buddy, pal",
+        "I'm not your pal, friend",
+        "I'm not your friend, cuz",
+        "I'm not your cuz, bro",
+        "I'm not your bro, mate",
+        "I'm not your mate, dog",
+        "I'm not your dog, dude",
+        "I'm not your dude, broski",
+        "I'm not your broski, son",
+        "I'm not your son, dad",
+        "I'm not your dad, son",
+        "I'm not your son, acquaintances of mine",
+        "I'm not your acquaintances, love",
+        "I'm not your love, sweetheart",
+        "I'm not your sweetheart, babe",
+        "I'm not your babe, darling",
+        "I'm not your darling, dearie",
+        "I'm not your dearie, honey",
+        "I'm not your honey, sugar",
+        "I'm not your sugar, baby",
+        "I'm not your baby, sweetie",
+        "I'm not your sweetie, lover",
+        "I'm not your lover, precious",
+        "That's it, that's enough internet for me today",
+        "I'm not your internet, random dude",
+        "I'm not your random dude, Dad",
+    ];
+
+    let mut parent_item = add_post(api, chain[0], &alice).await?;
+    println!("post: {}", chain[0]);
+
+    for (i, reply) in chain.iter().skip(1).enumerate() {
+        sleep(DELAY);
+        println!("reply: {}", reply);
+        let author = if i % 2 == 0 { alice } else { bob };
+        parent_item = add_comment_to(api, parent_item, reply, author).await?;
+    }
     Ok(())
 }
 
