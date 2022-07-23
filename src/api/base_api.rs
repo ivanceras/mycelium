@@ -44,7 +44,9 @@ impl BaseApi {
     /// `curl -H "Content-Type: application/json" -d '{"id":1, "jsonrpc":"2.0", "method": "state_getMetadata"}' http://localhost:9933/`
     ///
     /// Which makes an rpc call of a substrate node running locally.
-    pub async fn fetch_runtime_metadata(&self) -> Result<Option<RuntimeMetadataPrefixed>, Error> {
+    pub async fn fetch_runtime_metadata(
+        &self,
+    ) -> Result<Option<RuntimeMetadataPrefixed>, Error> {
         let value = self.json_request_value("state_getMetadata", ()).await?;
         match value {
             Some(value) => {
@@ -52,7 +54,8 @@ impl BaseApi {
                     .as_str()
                     .expect("Expecting a string value on the result");
                 let data = Vec::from_hex(value_str)?;
-                let rt_metadata = RuntimeMetadataPrefixed::decode(&mut data.as_slice())?;
+                let rt_metadata =
+                    RuntimeMetadataPrefixed::decode(&mut data.as_slice())?;
                 Ok(Some(rt_metadata))
             }
             None => Ok(None),
@@ -72,11 +75,14 @@ impl BaseApi {
     }
 
     // curl -H "Content-Type: application/json" -d '{"id":1, "jsonrpc":"2.0", "method": "rpc_methods"}' http://localhost:9933/
-    pub async fn fetch_rpc_methods(&self) -> Result<Option<Vec<String>>, Error> {
+    pub async fn fetch_rpc_methods(
+        &self,
+    ) -> Result<Option<Vec<String>>, Error> {
         let value = self.json_request_value("rpc_methods", ()).await?;
         match value {
             Some(value) => {
-                let methods: Vec<String> = serde_json::from_value(value["methods"].clone())?;
+                let methods: Vec<String> =
+                    serde_json::from_value(value["methods"].clone())?;
                 Ok(Some(methods))
             }
             None => Ok(None),
@@ -84,7 +90,10 @@ impl BaseApi {
     }
 
     /// return the block hash of block number `n`
-    pub async fn fetch_block_hash(&self, n: u32) -> Result<Option<H256>, Error> {
+    pub async fn fetch_block_hash(
+        &self,
+        n: u32,
+    ) -> Result<Option<H256>, Error> {
         let value = self
             .json_request_value("chain_getBlockHash", vec![n])
             .await?;
@@ -112,7 +121,10 @@ impl BaseApi {
     }
 
     /// Fetch a substrate signed block by number `n`
-    pub async fn fetch_signed_block<B>(&self, n: u32) -> Result<Option<SignedBlock<B>>, Error>
+    pub async fn fetch_signed_block<B>(
+        &self,
+        n: u32,
+    ) -> Result<Option<SignedBlock<B>>, Error>
     where
         B: Block + DeserializeOwned,
     {
@@ -168,13 +180,16 @@ impl BaseApi {
         }
     }
 
-    pub async fn fetch_runtime_version(&self) -> Result<Option<RuntimeVersion>, Error> {
+    pub async fn fetch_runtime_version(
+        &self,
+    ) -> Result<Option<RuntimeVersion>, Error> {
         let version = self
             .json_request_value("state_getRuntimeVersion", ())
             .await?;
         match version {
             Some(version) => {
-                let rt_version: RuntimeVersion = serde_json::from_value(version)?;
+                let rt_version: RuntimeVersion =
+                    serde_json::from_value(version)?;
                 Ok(Some(rt_version))
             }
             None => Ok(None),
@@ -253,7 +268,8 @@ mod tests {
     #[tokio::test]
     async fn test1() {
         println!("fetching metada...");
-        let result = BaseApi::new("http://localhost:9933").fetch_metadata().await;
+        let result =
+            BaseApi::new("http://localhost:9933").fetch_metadata().await;
         dbg!(&result);
         assert!(result.is_ok());
     }

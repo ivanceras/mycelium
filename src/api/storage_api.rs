@@ -14,7 +14,8 @@ impl Api {
     where
         V: Decode,
     {
-        let storage_key = self.metadata.storage_value_key(module, storage_name)?;
+        let storage_key =
+            self.metadata.storage_value_key(module, storage_name)?;
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
@@ -23,7 +24,8 @@ impl Api {
         module: &str,
         storage_name: &str,
     ) -> Result<Option<Vec<u8>>, Error> {
-        let storage_key = self.metadata.storage_value_key(module, storage_name)?;
+        let storage_key =
+            self.metadata.storage_value_key(module, storage_name)?;
         self.fetch_opaque_storage_by_key_hash(storage_key).await
     }
 
@@ -37,7 +39,8 @@ impl Api {
         K: Encode,
         V: Decode,
     {
-        let storage_key = self.metadata.storage_map_key(module, storage_name, key)?;
+        let storage_key =
+            self.metadata.storage_map_key(module, storage_name, key)?;
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
@@ -50,7 +53,8 @@ impl Api {
     where
         K: Encode,
     {
-        let storage_key = self.metadata.storage_map_key(module, storage_name, key)?;
+        let storage_key =
+            self.metadata.storage_map_key(module, storage_name, key)?;
         self.fetch_opaque_storage_by_key_hash(storage_key).await
     }
 
@@ -66,9 +70,12 @@ impl Api {
         Q: Encode,
         V: Decode,
     {
-        let storage_key =
-            self.metadata
-                .storage_double_map_key(module, storage_name, first, second)?;
+        let storage_key = self.metadata.storage_double_map_key(
+            module,
+            storage_name,
+            first,
+            second,
+        )?;
         self.fetch_storage_by_key_hash(storage_key).await
     }
 
@@ -83,9 +90,12 @@ impl Api {
         K: Encode,
         Q: Encode,
     {
-        let storage_key =
-            self.metadata
-                .storage_double_map_key(module, storage_name, first, second)?;
+        let storage_key = self.metadata.storage_double_map_key(
+            module,
+            storage_name,
+            first,
+            second,
+        )?;
         self.fetch_opaque_storage_by_key_hash(storage_key).await
     }
 
@@ -132,13 +142,20 @@ impl Api {
         K: Encode,
     {
         let storage_keys: Option<Vec<StorageKey>> = self
-            .fetch_opaque_storage_keys_paged(module, storage_name, count, start_key)
+            .fetch_opaque_storage_keys_paged(
+                module,
+                storage_name,
+                count,
+                start_key,
+            )
             .await?;
 
         if let Some(storage_keys) = storage_keys {
             let mut storage_values = Vec::with_capacity(storage_keys.len());
             for storage_key in storage_keys.into_iter() {
-                if let Some(bytes) = self.fetch_opaque_storage_by_key_hash(storage_key).await? {
+                if let Some(bytes) =
+                    self.fetch_opaque_storage_by_key_hash(storage_key).await?
+                {
                     storage_values.push(bytes);
                 }
             }
@@ -166,12 +183,14 @@ impl Api {
     where
         K: Encode,
     {
-        let storage_key = self.metadata.storage_map_key_prefix(module, storage_name)?;
+        let storage_key =
+            self.metadata.storage_map_key_prefix(module, storage_name)?;
         let start_storage_key = if let Some(start_key) = start_key {
-            Some(
-                self.metadata
-                    .storage_map_key(module, storage_name, start_key)?,
-            )
+            Some(self.metadata.storage_map_key(
+                module,
+                storage_name,
+                start_key,
+            )?)
         } else {
             None
         };
@@ -185,13 +204,15 @@ impl Api {
 
         match value {
             Some(value) => {
-                let value_array = value.as_array().expect("must be an array of str");
+                let value_array =
+                    value.as_array().expect("must be an array of str");
                 let data: Vec<StorageKey> = value_array
                     .into_iter()
                     .map(|v| {
-                        let value_str = v.as_str().expect("each item must be a str");
-                        let bytes =
-                            Vec::from_hex(value_str).expect("must convert hex value to bytes");
+                        let value_str =
+                            v.as_str().expect("each item must be a str");
+                        let bytes = Vec::from_hex(value_str)
+                            .expect("must convert hex value to bytes");
                         StorageKey(bytes)
                     })
                     .collect();

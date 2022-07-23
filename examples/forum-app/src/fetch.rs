@@ -54,7 +54,10 @@ pub async fn get_reply_count(api: &Api, post_id: u32) -> Result<usize, Error> {
     Ok(reply_count)
 }
 
-pub async fn get_post_details(api: &Api, post_id: u32) -> Result<Option<PostDetail>, Error> {
+pub async fn get_post_details(
+    api: &Api,
+    post_id: u32,
+) -> Result<Option<PostDetail>, Error> {
     log::info!("getting the post details of {}", post_id);
     let post = get_post(api, post_id).await?;
     if let Some(post) = post {
@@ -86,12 +89,16 @@ pub async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post>, Error> {
     }
 }
 
-async fn get_kids(api: &Api, item_id: u32) -> Result<Option<BoundedVec<u32, MaxComments>>, Error> {
+async fn get_kids(
+    api: &Api,
+    item_id: u32,
+) -> Result<Option<BoundedVec<u32, MaxComments>>, Error> {
     if let Some(kids) = api
         .fetch_opaque_storage_map(FORUM_MODULE, KIDS, item_id)
         .await?
     {
-        let kids: Option<BoundedVec<u32, MaxComments>> = Decode::decode(&mut kids.as_slice()).ok();
+        let kids: Option<BoundedVec<u32, MaxComments>> =
+            Decode::decode(&mut kids.as_slice()).ok();
         Ok(kids)
     } else {
         Ok(None)
@@ -99,7 +106,10 @@ async fn get_kids(api: &Api, item_id: u32) -> Result<Option<BoundedVec<u32, MaxC
 }
 
 #[async_recursion(?Send)]
-pub async fn get_comment_replies(api: &Api, item_id: u32) -> Result<Vec<CommentDetail>, Error> {
+pub async fn get_comment_replies(
+    api: &Api,
+    item_id: u32,
+) -> Result<Vec<CommentDetail>, Error> {
     let mut comment_details = vec![];
     if let Some(kids) = get_kids(api, item_id).await? {
         log::info!("kids of item_id: {} are: {:?}", item_id, kids);
@@ -134,13 +144,17 @@ pub async fn get_comment_detail(
     }
 }
 
-pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, Error> {
+pub async fn get_comment(
+    api: &Api,
+    comment_id: u32,
+) -> Result<Option<Comment>, Error> {
     log::debug!("getting comment_id: {}", comment_id);
     if let Some(comment) = api
         .fetch_opaque_storage_map(FORUM_MODULE, ALL_COMMENTS, comment_id)
         .await?
     {
-        let comment: Option<Comment> = Decode::decode(&mut comment.as_slice()).ok();
+        let comment: Option<Comment> =
+            Decode::decode(&mut comment.as_slice()).ok();
         log::info!("got comment: {:?}", comment);
         Ok(comment)
     } else {
@@ -148,17 +162,23 @@ pub async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, 
     }
 }
 
-pub async fn get_block_hash(api: &Api, block_number: u32) -> Result<Option<String>, Error> {
+pub async fn get_block_hash(
+    api: &Api,
+    block_number: u32,
+) -> Result<Option<String>, Error> {
     let block_hash = api.fetch_block_hash(block_number).await?;
     Ok(block_hash.map(|hash| format!("{:#x}", hash)))
 }
 
 pub async fn add_post(api: &Api, post: &str) -> Result<Option<H256>, Error> {
     let bounded_content = BoundedVec::try_from(post.as_bytes().to_vec())
-        .or_else(|_e| Err(Error::ContentTooLong(post.len(), MaxContentLength::get())))?;
+        .or_else(|_e| {
+            Err(Error::ContentTooLong(post.len(), MaxContentLength::get()))
+        })?;
 
     let pallet_call = api.pallet_call_index(FORUM_MODULE, "post_content")?;
-    let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) = (pallet_call, bounded_content);
+    let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) =
+        (pallet_call, bounded_content);
 
     let extrinsic = crate::sign_call_and_encode(api, call).await?;
     log::info!("added a post..");
@@ -172,12 +192,13 @@ pub async fn add_comment(
     parent_item: u32,
     comment: &str,
 ) -> Result<Option<H256>, Error> {
-    let bounded_content = BoundedVec::try_from(comment.as_bytes().to_vec()).or_else(|_e| {
-        Err(Error::ContentTooLong(
-            comment.len(),
-            MaxContentLength::get(),
-        ))
-    })?;
+    let bounded_content = BoundedVec::try_from(comment.as_bytes().to_vec())
+        .or_else(|_e| {
+            Err(Error::ContentTooLong(
+                comment.len(),
+                MaxContentLength::get(),
+            ))
+        })?;
 
     let pallet_call = api.pallet_call_index(FORUM_MODULE, "comment_on")?;
     let call: ([u8; 2], u32, BoundedVec<u8, MaxContentLength>) =
@@ -191,15 +212,21 @@ pub async fn add_comment(
 }
 
 /// send some certain amount to this user
-pub async fn send_reward(api: &Api, to: AccountId32, amount: u128) -> Result<Option<H256>, Error> {
-    let balance_transfer_call_index: [u8; 2] = api.pallet_call_index("Balances", "transfer")?;
+pub async fn send_reward(
+    api: &Api,
+    to: AccountId32,
+    amount: u128,
+) -> Result<Option<H256>, Error> {
+    let balance_transfer_call_index: [u8; 2] =
+        api.pallet_call_index("Balances", "transfer")?;
     let balance_transfer_call: ([u8; 2], GenericAddress, Compact<u128>) = (
         balance_transfer_call_index,
         GenericAddress::Id(to),
         Compact(amount),
     );
 
-    let extrinsic = crate::sign_call_and_encode(api, balance_transfer_call).await?;
+    let extrinsic =
+        crate::sign_call_and_encode(api, balance_transfer_call).await?;
     let tx_hash = api.author_submit_extrinsic(extrinsic).await?;
     log::debug!("Sent some coins to with a tx_hash: {:?}", tx_hash);
     Ok(tx_hash)

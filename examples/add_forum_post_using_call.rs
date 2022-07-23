@@ -2,7 +2,9 @@
 #![allow(warnings)]
 use frame_support::BoundedVec;
 use mycelium::{
-    types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder},
+    types::extrinsic_params::{
+        PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder,
+    },
     Api,
 };
 use node_template_runtime::Runtime;
@@ -34,7 +36,8 @@ async fn main() -> Result<(), mycelium::Error> {
         .tip(10);
 
     let call: Call = Call::ForumModule(pallet_forum::Call::post_content {
-        content: BoundedVec::try_from(b"Hello world post using Call!".to_vec()).unwrap(),
+        content: BoundedVec::try_from(b"Hello world post using Call!".to_vec())
+            .unwrap(),
     });
 
     let extrinsic = api

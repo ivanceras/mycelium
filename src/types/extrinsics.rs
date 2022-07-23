@@ -112,7 +112,8 @@ where
         // with substrate's generic `Vec<u8>` type. Basically this just means accepting that there
         // will be a prefix of vector length (we don't need
         // to use this).
-        let _length_do_not_remove_me_see_above: Vec<()> = Decode::decode(input)?;
+        let _length_do_not_remove_me_see_above: Vec<()> =
+            Decode::decode(input)?;
 
         let version = input.read_byte()?;
 
@@ -134,7 +135,9 @@ where
 }
 
 /// Same function as in primitives::generic. Needed to be copied as it is private there.
-fn encode_with_vec_prefix<T: Encode, F: Fn(&mut Vec<u8>)>(encoder: F) -> Vec<u8> {
+fn encode_with_vec_prefix<T: Encode, F: Fn(&mut Vec<u8>)>(
+    encoder: F,
+) -> Vec<u8> {
     let size = sp_std::mem::size_of::<T>();
     let reserve = match size {
         0..=0b0011_1111 => 1,
@@ -172,8 +175,8 @@ mod tests {
         let signature = pair.sign(&msg);
         let multi_sig = MultiSignature::from(signature);
         let account: AccountId32 = pair.public().into();
-        let tx_params =
-            PlainTipExtrinsicParamsBuilder::new().era(Era::mortal(8, 0), Hash::from([0u8; 32]));
+        let tx_params = PlainTipExtrinsicParamsBuilder::new()
+            .era(Era::mortal(8, 0), Hash::from([0u8; 32]));
 
         let default_extra = BaseExtrinsicParams::new(0, tx_params);
         let xt = UncheckedExtrinsicV4::new_signed(

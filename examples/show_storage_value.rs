@@ -43,7 +43,8 @@ async fn main() -> Result<(), mycelium::Error> {
         total_issuance_type
     );
 
-    let account_balance_type = api.metadata().storage_map_type("Balances", "Account");
+    let account_balance_type =
+        api.metadata().storage_map_type("Balances", "Account");
     println!(
         "storage type of Balances::Account: {:#?}",
         account_balance_type
@@ -56,7 +57,12 @@ async fn main() -> Result<(), mycelium::Error> {
     }
 
     let paged: Result<Option<Vec<Vec<u8>>>, _> = api
-        .fetch_opaque_storage_map_paged("Balances", "Reserves", 10, None::<AccountId32>)
+        .fetch_opaque_storage_map_paged(
+            "Balances",
+            "Reserves",
+            10,
+            None::<AccountId32>,
+        )
         .await;
     println!("paged: {:?}", paged);
     Ok(())

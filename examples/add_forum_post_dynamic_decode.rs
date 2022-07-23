@@ -137,7 +137,8 @@ async fn main() -> Result<(), mycelium::Error> {
     dbg!(&kids);
     if let Some(kids) = kids {
         for (i, kid) in kids.into_iter().enumerate() {
-            let kid: Result<BoundedVec<u32, MaxComments>, _> = Decode::decode(&mut kid.as_slice());
+            let kid: Result<BoundedVec<u32, MaxComments>, _> =
+                Decode::decode(&mut kid.as_slice());
             println!("kid[{}]: {:?}", i, kid);
         }
     }
@@ -145,14 +146,19 @@ async fn main() -> Result<(), mycelium::Error> {
     Ok(())
 }
 
-async fn add_post(api: &Api, post: &str, author: &Pair) -> Result<u32, mycelium::Error> {
+async fn add_post(
+    api: &Api,
+    post: &str,
+    author: &Pair,
+) -> Result<u32, mycelium::Error> {
     let pallet = api.metadata().pallet("ForumModule")?;
     let call_index = pallet
         .calls
         .get("post_content")
         .expect("unable to find function");
 
-    let bounded_content = BoundedVec::try_from(post.as_bytes().to_vec()).unwrap();
+    let bounded_content =
+        BoundedVec::try_from(post.as_bytes().to_vec()).unwrap();
     let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) =
         ([pallet.index, *call_index], bounded_content);
 
@@ -190,7 +196,8 @@ async fn add_comment_to(
 ) -> Result<u32, mycelium::Error> {
     let pallet = api.metadata().pallet("ForumModule")?;
     let call_index = pallet.calls.get("comment_on").unwrap();
-    let bounded_comment = BoundedVec::try_from(comment.as_bytes().to_vec()).unwrap();
+    let bounded_comment =
+        BoundedVec::try_from(comment.as_bytes().to_vec()).unwrap();
     let call: ([u8; 2], u32, BoundedVec<u8, MaxContentLength>) =
         ([pallet.index, *call_index], parent_item, bounded_comment);
 
@@ -202,7 +209,10 @@ async fn add_comment_to(
     Ok(current_item)
 }
 
-async fn get_post_details(api: &Api, post_id: u32) -> Result<Option<PostDetails>, mycelium::Error> {
+async fn get_post_details(
+    api: &Api,
+    post_id: u32,
+) -> Result<Option<PostDetails>, mycelium::Error> {
     println!("getting the post details of {}", post_id);
     let post = get_post(api, post_id).await?;
     if let Some(post) = post {
@@ -232,7 +242,10 @@ async fn get_all_posts(api: &Api) -> Result<Vec<Post>, mycelium::Error> {
     Ok(all_post)
 }
 
-async fn get_post(api: &Api, post_id: u32) -> Result<Option<Post>, mycelium::Error> {
+async fn get_post(
+    api: &Api,
+    post_id: u32,
+) -> Result<Option<Post>, mycelium::Error> {
     if let Some(post) = api
         .fetch_opaque_storage_map("ForumModule", "AllPosts", post_id)
         .await?
@@ -252,7 +265,8 @@ async fn get_kids(
         .fetch_opaque_storage_map("ForumModule", "Kids", item_id)
         .await?
     {
-        let kids: BoundedVec<u32, MaxComments> = Decode::decode(&mut kids.as_slice())?;
+        let kids: BoundedVec<u32, MaxComments> =
+            Decode::decode(&mut kids.as_slice())?;
         println!("kids of item: {} are: {:?}", item_id, kids);
         Ok(Some(kids))
     } else {
@@ -284,7 +298,10 @@ async fn get_comment_replies(
     Ok(comment_details)
 }
 
-async fn get_comment(api: &Api, comment_id: u32) -> Result<Option<Comment>, mycelium::Error> {
+async fn get_comment(
+    api: &Api,
+    comment_id: u32,
+) -> Result<Option<Comment>, mycelium::Error> {
     println!("getting comment {}", comment_id);
     if let Some(comment) = api
         .fetch_opaque_storage_map("ForumModule", "AllComments", comment_id)

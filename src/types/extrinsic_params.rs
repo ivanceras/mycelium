@@ -142,7 +142,11 @@ impl<Call> SignedPayload<Call>
 where
     Call: Encode,
 {
-    pub fn from_raw(call: Call, extra: GenericExtra, additional_signed: AdditionalSigned) -> Self {
+    pub fn from_raw(
+        call: Call,
+        extra: GenericExtra,
+        additional_signed: AdditionalSigned,
+    ) -> Self {
         Self((call, extra, additional_signed))
     }
 

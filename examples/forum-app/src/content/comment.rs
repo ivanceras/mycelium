@@ -55,7 +55,9 @@ impl CommentDetail {
             [class("comment-detail")],
             [
                 self.view_as_summary(),
-                Content::view_submit_comment_form(ParentItem::Comment(self.comment_id())),
+                Content::view_submit_comment_form(ParentItem::Comment(
+                    self.comment_id(),
+                )),
                 ul(
                     [],
                     self.kids.iter().map(|comment| comment.view_recursively()),

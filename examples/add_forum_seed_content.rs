@@ -118,7 +118,8 @@ async fn main() -> anyhow::Result<()> {
             sleep(DELAY);
             for reply in replies1 {
                 println!("\t\t>{}", reply);
-                let _comment_id = add_comment_to(&api, comment_id, reply, &alice).await?;
+                let _comment_id =
+                    add_comment_to(&api, comment_id, reply, &alice).await?;
                 sleep(DELAY);
             }
         }
@@ -127,7 +128,11 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn more_seed(api: &Api, alice: &Pair, bob: &Pair) -> Result<(), mycelium::Error> {
+async fn more_seed(
+    api: &Api,
+    alice: &Pair,
+    bob: &Pair,
+) -> Result<(), mycelium::Error> {
     let chain = vec![
         "Gordon Ramsay doesn't like being called \"mate\"",
         "I'm not your mate buddy",
@@ -175,7 +180,11 @@ fn sleep(ms: u64) {
     std::thread::sleep(std::time::Duration::from_millis(ms));
 }
 
-async fn add_post(api: &Api, post: &str, author: &Pair) -> Result<u32, mycelium::Error> {
+async fn add_post(
+    api: &Api,
+    post: &str,
+    author: &Pair,
+) -> Result<u32, mycelium::Error> {
     println!("post len: {}", post.len());
     let pallet = api.metadata().pallet("ForumModule")?;
     let call_index = pallet
@@ -183,8 +192,8 @@ async fn add_post(api: &Api, post: &str, author: &Pair) -> Result<u32, mycelium:
         .get("post_content")
         .expect("unable to find function");
 
-    let bounded_content =
-        BoundedVec::try_from(post.as_bytes().to_vec()).expect("Content is too long");
+    let bounded_content = BoundedVec::try_from(post.as_bytes().to_vec())
+        .expect("Content is too long");
     let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) =
         ([pallet.index, *call_index], bounded_content);
 
@@ -224,8 +233,8 @@ async fn add_comment_to(
     println!("comment len: {}", comment.len());
     let pallet = api.metadata().pallet("ForumModule")?;
     let call_index = pallet.calls.get("comment_on").unwrap();
-    let bounded_comment =
-        BoundedVec::try_from(comment.as_bytes().to_vec()).expect("Content is too long");
+    let bounded_comment = BoundedVec::try_from(comment.as_bytes().to_vec())
+        .expect("Content is too long");
     let call: ([u8; 2], u32, BoundedVec<u8, MaxContentLength>) =
         ([pallet.index, *call_index], parent_item, bounded_comment);
 

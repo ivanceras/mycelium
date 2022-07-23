@@ -105,8 +105,9 @@ impl App {
                         program.dispatch(Msg::InitApi(api));
                     }
                     Err(e) => {
-                        program
-                            .dispatch(Msg::Errored(Error::ApiInitializationError(e.to_string())));
+                        program.dispatch(Msg::Errored(
+                            Error::ApiInitializationError(e.to_string()),
+                        ));
                     }
                 }
             };
@@ -126,8 +127,13 @@ impl App {
                         program.dispatch(Msg::PostsReceived(posts));
                     }
                     Err(e) => {
-                        log::error!("Something is wrong when fetching: {}", e.to_string());
-                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                        log::error!(
+                            "Something is wrong when fetching: {}",
+                            e.to_string()
+                        );
+                        program.dispatch(Msg::Errored(Error::RequestError(
+                            e.to_string(),
+                        )));
                     }
                 }
             };
@@ -151,8 +157,13 @@ impl App {
                         program.dispatch_with_delay(Msg::FetchPosts, 1000);
                     }
                     Err(e) => {
-                        log::error!("Something is wrong when submitting post: {}", e.to_string());
-                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                        log::error!(
+                            "Something is wrong when submitting post: {}",
+                            e.to_string()
+                        );
+                        program.dispatch(Msg::Errored(Error::RequestError(
+                            e.to_string(),
+                        )));
                     }
                 }
             };
@@ -160,11 +171,17 @@ impl App {
         })
     }
 
-    fn submit_comment(&self, parent_item: ParentItem, new_comment: &str) -> Cmd<Self, Msg> {
+    fn submit_comment(
+        &self,
+        parent_item: ParentItem,
+        new_comment: &str,
+    ) -> Cmd<Self, Msg> {
         match parent_item {
-            ParentItem::Post(post_id) => {
-                self.submit_comment_reply(post_id, new_comment, Msg::ShowPost(post_id))
-            }
+            ParentItem::Post(post_id) => self.submit_comment_reply(
+                post_id,
+                new_comment,
+                Msg::ShowPost(post_id),
+            ),
             ParentItem::Comment(comment_id) => self.submit_comment_reply(
                 comment_id,
                 new_comment,
@@ -185,7 +202,9 @@ impl App {
         Cmd::new(move |program| {
             let async_fetch = |program: Program<Self, Msg>| async move {
                 let api = api.unwrap();
-                match fetch::add_comment(&api, parent_post_id, &new_comment).await {
+                match fetch::add_comment(&api, parent_post_id, &new_comment)
+                    .await
+                {
                     Ok(tx_hash) => {
                         log::info!(
                             "Posting a new content successful with tx_hash {:?}",
@@ -194,8 +213,13 @@ impl App {
                         program.dispatch_with_delay(after_msg, 2000);
                     }
                     Err(e) => {
-                        log::error!("Something is wrong when submitting post: {}", e.to_string());
-                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                        log::error!(
+                            "Something is wrong when submitting post: {}",
+                            e.to_string()
+                        );
+                        program.dispatch(Msg::Errored(Error::RequestError(
+                            e.to_string(),
+                        )));
                     }
                 }
             };
@@ -203,7 +227,11 @@ impl App {
         })
     }
 
-    fn process_reward_author(&self, author: AccountId32, reward_amount: u128) -> Cmd<Self, Msg> {
+    fn process_reward_author(
+        &self,
+        author: AccountId32,
+        reward_amount: u128,
+    ) -> Cmd<Self, Msg> {
         log::info!("Rewarding author {} with {}..", author, reward_amount);
         let api = self.api.clone();
         Cmd::new(move |program| {
@@ -211,15 +239,25 @@ impl App {
                 let api = api.unwrap();
                 match fetch::send_reward(&api, author, reward_amount).await {
                     Ok(tx_hash) => {
-                        log::info!("Author rewarded with a tx_hash {:?}", tx_hash);
+                        log::info!(
+                            "Author rewarded with a tx_hash {:?}",
+                            tx_hash
+                        );
                         program.dispatch_with_delay(
-                            Msg::RewardFinish(tx_hash.expect("must have the hash")),
+                            Msg::RewardFinish(
+                                tx_hash.expect("must have the hash"),
+                            ),
                             2000,
                         );
                     }
                     Err(e) => {
-                        log::error!("Something is wrong when submitting post: {}", e.to_string());
-                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                        log::error!(
+                            "Something is wrong when submitting post: {}",
+                            e.to_string()
+                        );
+                        program.dispatch(Msg::Errored(Error::RequestError(
+                            e.to_string(),
+                        )));
                     }
                 }
             };
@@ -236,14 +274,23 @@ impl App {
                 match fetch::get_post_details(&api, post_id).await {
                     Ok(post_detail) => {
                         if let Some(post_detail) = post_detail {
-                            program.dispatch(Msg::PostDetailsReceived(post_detail));
+                            program.dispatch(Msg::PostDetailsReceived(
+                                post_detail,
+                            ));
                         } else {
-                            program.dispatch(Msg::Errored(Error::Error404(post_id)))
+                            program.dispatch(Msg::Errored(Error::Error404(
+                                post_id,
+                            )))
                         }
                     }
                     Err(e) => {
-                        log::error!("Something is wrong when fetching: {}", e.to_string());
-                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                        log::error!(
+                            "Something is wrong when fetching: {}",
+                            e.to_string()
+                        );
+                        program.dispatch(Msg::Errored(Error::RequestError(
+                            e.to_string(),
+                        )));
                     }
                 }
             };
@@ -260,19 +307,28 @@ impl App {
                 match fetch::get_comment_detail(&api, comment_id).await {
                     Ok(comment_detail) => {
                         if let Some(comment_detail) = comment_detail {
-                            program.dispatch(Msg::CommentDetailReceived(comment_detail));
+                            program.dispatch(Msg::CommentDetailReceived(
+                                comment_detail,
+                            ));
                         } else {
                             log::error!(
                                 "Errored fetching comment details: {:#?}, comment_id: {}",
                                 comment_detail,
                                 comment_id
                             );
-                            program.dispatch(Msg::Errored(Error::Error404(comment_id)))
+                            program.dispatch(Msg::Errored(Error::Error404(
+                                comment_id,
+                            )))
                         }
                     }
                     Err(e) => {
-                        log::error!("Something is wrong when fetching: {}", e.to_string());
-                        program.dispatch(Msg::Errored(Error::RequestError(e.to_string())));
+                        log::error!(
+                            "Something is wrong when fetching: {}",
+                            e.to_string()
+                        );
+                        program.dispatch(Msg::Errored(Error::RequestError(
+                            e.to_string(),
+                        )));
                     }
                 }
             };
@@ -324,7 +380,9 @@ impl Application<Msg> for App {
                 self.content = Some(Content::SubmitPost);
                 Cmd::none()
             }
-            Msg::ShowReplyToCommentForm(parent_item) => self.fetch_comment_details(parent_item),
+            Msg::ShowReplyToCommentForm(parent_item) => {
+                self.fetch_comment_details(parent_item)
+            }
             Msg::PostDetailsReceived(post_detail) => {
                 self.content = Some(Content::from(post_detail));
                 Cmd::none()
@@ -349,7 +407,11 @@ impl Application<Msg> for App {
             }
             Msg::SubmitComment(parent_item) => {
                 if let Some(new_comment) = &self.new_comment {
-                    log::info!("comment to :{:?} with:\n{}", parent_item, new_comment);
+                    log::info!(
+                        "comment to :{:?} with:\n{}",
+                        parent_item,
+                        new_comment
+                    );
                     self.submit_comment(parent_item, new_comment)
                 } else {
                     Cmd::none()
@@ -363,7 +425,9 @@ impl Application<Msg> for App {
                     Cmd::none()
                 }
             }
-            Msg::RewardAuthor(author) => self.process_reward_author(author, REWARD_AMOUNT),
+            Msg::RewardAuthor(author) => {
+                self.process_reward_author(author, REWARD_AMOUNT)
+            }
             Msg::RewardFinish(tx_hash) => {
                 log::info!("Reward is sent with tx_hash: {}", tx_hash);
                 sauron::window()
@@ -404,7 +468,10 @@ impl Application<Msg> for App {
 }
 
 /// TODO: This should be hookup to the browser extension
-pub async fn sign_call_and_encode<Call>(api: &Api, call: Call) -> Result<String, Error>
+pub async fn sign_call_and_encode<Call>(
+    api: &Api,
+    call: Call,
+) -> Result<String, Error>
 where
     Call: Encode + Clone + fmt::Debug,
 {

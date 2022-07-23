@@ -1,7 +1,9 @@
 //! An example using an offline extrinsic, using the types of the instantiated chain
 #![deny(warnings)]
 use mycelium::{
-    types::extrinsic_params::{PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder},
+    types::extrinsic_params::{
+        PlainTip, PlainTipExtrinsicParams, PlainTipExtrinsicParamsBuilder,
+    },
     Api,
 };
 use node_template_runtime::{BalancesCall, Call, Header};

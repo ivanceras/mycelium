@@ -54,7 +54,9 @@ impl PostDetail {
             [class("post-detail")],
             [
                 self.view_as_summary(),
-                Content::view_submit_comment_form(ParentItem::Post(self.post_id())),
+                Content::view_submit_comment_form(ParentItem::Post(
+                    self.post_id(),
+                )),
                 ul(
                     [class("comment-details")],
                     self.comments

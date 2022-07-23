@@ -32,7 +32,8 @@ impl Api {
         MultiSigner: From<P::Public>,
         MultiSignature: From<P::Signature>,
     {
-        let balance_call_index: [u8; 2] = self.pallet_call_index(BALANCES, "transfer")?;
+        let balance_call_index: [u8; 2] =
+            self.pallet_call_index(BALANCES, "transfer")?;
 
         let balance_call: ([u8; 2], GenericAddress, Compact<u128>) =
             (balance_call_index, GenericAddress::Id(to), Compact(amount));

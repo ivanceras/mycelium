@@ -43,10 +43,12 @@ async fn main() -> Result<(), mycelium::Error> {
 
     println!("ss58check: {}", public.to_ss58check());
 
-    let recover = AccountId32::from_ss58check(&public.to_ss58check()).expect("must not error");
+    let recover = AccountId32::from_ss58check(&public.to_ss58check())
+        .expect("must not error");
     assert_eq!(recover, alice_account_id);
 
-    let derived: sp_core::sr25519::Pair = Pair::from_seed_slice(&bytes).unwrap();
+    let derived: sp_core::sr25519::Pair =
+        Pair::from_seed_slice(&bytes).unwrap();
     assert_eq!(alice.to_raw_vec(), derived.to_raw_vec());
     println!("derived raw: {:?}", derived.to_raw_vec());
     println!("derived public: {:?}", derived.public());

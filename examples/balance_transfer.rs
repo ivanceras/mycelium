@@ -21,8 +21,10 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let to: AccountId32 = AccountKeyring::Charlie.to_account_id();
 
-    let alt_to = AccountId32::from_str("5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y")
-        .expect("must not error");
+    let alt_to = AccountId32::from_str(
+        "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+    )
+    .expect("must not error");
 
     assert_eq!(to, alt_to);
 
