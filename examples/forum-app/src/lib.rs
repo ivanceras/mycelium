@@ -15,7 +15,9 @@ use wasm_bindgen_futures::spawn_local;
 const URL: &str = "http://localhost:9933";
 const BLOCK_EXPLORER: &str =
     "https://polkadot.js.org/apps/?rpc=ws://127.0.0.1:9944#/explorer/query";
-const REWARD_AMOUNT: u128 = 1_000_000_000_000;
+
+const M_UNIT: u128 = 1_000_000_000_000_000_000;
+const REWARD_AMOUNT: u128 = M_UNIT / 100 - 1;
 
 mod content;
 mod fetch;

@@ -165,7 +165,7 @@ async fn more_seed(api: &Api, alice: &Pair, bob: &Pair) -> Result<(), mycelium::
     for (i, reply) in chain.iter().skip(1).enumerate() {
         sleep(DELAY);
         println!("reply: {}", reply);
-        let author = if i % 2 == 0 { alice } else { bob };
+        let author = if i % 2 == 1 { alice } else { bob };
         parent_item = add_comment_to(api, parent_item, reply, author).await?;
     }
     Ok(())
