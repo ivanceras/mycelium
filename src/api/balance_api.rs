@@ -16,6 +16,8 @@ use sp_runtime::generic::Era;
 use sp_runtime::MultiSignature;
 use sp_runtime::MultiSigner;
 
+const BALANCES: &str = "Balances";
+
 impl Api {
     /// transfer an amount using a signer `from` to account `to` with `amount` and `tip`
     pub async fn balance_transfer<P>(
@@ -30,17 +32,10 @@ impl Api {
         MultiSigner: From<P::Public>,
         MultiSignature: From<P::Signature>,
     {
-        let balance_pallet = self.metadata.pallet("Balances")?;
-        let balance_transfer_call_index = balance_pallet
-            .calls
-            .get("transfer")
-            .expect("unable to find transfer function");
+        let balance_call_index: [u8; 2] = self.pallet_call_index(BALANCES, "transfer")?;
 
-        let balance_call: ([u8; 2], GenericAddress, Compact<u128>) = (
-            [balance_pallet.index, *balance_transfer_call_index],
-            GenericAddress::Id(to),
-            Compact(amount),
-        );
+        let balance_call: ([u8; 2], GenericAddress, Compact<u128>) =
+            (balance_call_index, GenericAddress::Id(to), Compact(amount));
 
         if let Some(tip) = tip {
             let genesis_hash = self.genesis_hash();
