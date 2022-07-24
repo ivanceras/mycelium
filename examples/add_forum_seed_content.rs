@@ -112,7 +112,7 @@ async fn main() -> anyhow::Result<()> {
 
     for (post, replies0) in entries {
         println!("post: {}", post);
-        let post_id = add_post(&api, post, &alice).await?;
+        let post_id = add_post(&api, post, &bob).await?;
         sleep(DELAY);
         for (reply, replies1) in replies0 {
             println!("\t>{}", reply);
@@ -121,7 +121,7 @@ async fn main() -> anyhow::Result<()> {
             for reply in replies1 {
                 println!("\t\t>{}", reply);
                 let _comment_id =
-                    add_comment_to(&api, comment_id, reply, &alice).await?;
+                    add_comment_to(&api, comment_id, reply, &bob).await?;
                 sleep(DELAY);
             }
         }
@@ -135,6 +135,8 @@ async fn more_seed(
     alice: &Pair,
     bob: &Pair,
 ) -> Result<(), mycelium::Error> {
+
+
     let chain = vec![
         "Gordon Ramsay doesn't like being called \"mate\"",
         "I'm not your mate buddy",
@@ -166,13 +168,17 @@ async fn more_seed(
         "I'm not your random dude, Dad",
     ];
 
-    let mut parent_item = add_post(api, chain[0], &alice).await?;
+    let mut parent_item = add_post(api, chain[0], &bob).await?;
     println!("post: {}", chain[0]);
 
     for (i, reply) in chain.iter().skip(1).enumerate() {
         sleep(DELAY);
-        println!("reply: {}", reply);
-        let author = if i % 2 == 1 { alice } else { bob };
+        println!("reply[{}]: {}",i, reply);
+        let author = if i % 3 == 0 {
+            alice
+        }else{
+            bob
+        };
         parent_item = add_comment_to(api, parent_item, reply, author).await?;
     }
     Ok(())
