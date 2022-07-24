@@ -15,6 +15,9 @@ type MaxContentLength = ConstU32<280>;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let entries: Vec<(&str,Vec<(&str, Vec<&str>)>)> = vec![
+        ("We've been trying to reach you concerning your vehicle's extended warranty. You should've received a notice in the mail about your car's extended warranty eligibility. Since we've not gotten a response, we're giving you a final courtesy call before we close out your file.",
+         vec![]
+        ),
         ("This is content1",
             vec![
                 ("This is comment1 of content1",vec![]),
