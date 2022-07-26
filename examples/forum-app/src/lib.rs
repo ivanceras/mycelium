@@ -13,6 +13,7 @@ use sauron::prelude::*;
 use sp_keyring::AccountKeyring;
 use std::fmt;
 use wasm_bindgen_futures::spawn_local;
+use mycelium::sp_core::Pair;
 
 const URL: &str = "http://localhost:9933";
 const BLOCK_EXPLORER: &str =
@@ -490,20 +491,23 @@ impl Application<Msg> for App {
 }
 
 /// TODO: This should be hookup to the browser extension
-pub async fn sign_call_and_encode<Call>(
+pub async fn sign_and_submit_call<Call>(
     api: &Api,
     call: Call,
-) -> Result<String, Error>
+) -> Result<Option<H256>, Error>
 where
     Call: Encode + Clone + fmt::Debug,
 {
     // we use alice for now, for simplicity
     let signer: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
-    let extrinsic = api
-        .sign_extrinsic(&signer, call, None)
-        .await?;
-    let encoded = extrinsic.hex_encode();
-    Ok(encoded)
+    let signer_account = AccountId32::from(signer.public());
+    let nonce = api.get_nonce_for_account(&signer_account).await?;
+
+    let (payload, extra) = api.compose_opaque_payload_and_extra(nonce, call.clone(), None, None, None).await?;
+    let signature = signer.sign(&payload);
+
+    let tx_hash = api.submit_signed_call(call, &signer_account, signature.into(), extra).await?;
+    Ok(tx_hash)
 }
 
 #[wasm_bindgen(start)]

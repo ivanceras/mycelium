@@ -190,10 +190,8 @@ pub async fn add_post(api: &Api, post: &str) -> Result<Option<H256>, Error> {
     let call: ([u8; 2], BoundedVec<u8, MaxContentLength>) =
         (pallet_call, bounded_content);
 
-    let extrinsic = crate::sign_call_and_encode(api, call).await?;
+    let tx_hash = crate::sign_and_submit_call(api, call).await?;
     log::info!("added a post..");
-    let tx_hash = api.author_submit_extrinsic(extrinsic).await?;
-
     Ok(tx_hash)
 }
 
@@ -214,10 +212,7 @@ pub async fn add_comment(
     let call: ([u8; 2], u32, BoundedVec<u8, MaxContentLength>) =
         (pallet_call, parent_item, bounded_content);
 
-    let extrinsic = crate::sign_call_and_encode(api, call).await?;
-    log::debug!("Added a comment to parent_item: {}", parent_item);
-    let tx_hash = api.author_submit_extrinsic(extrinsic).await?;
-
+    let tx_hash = crate::sign_and_submit_call(api, call).await?;
     Ok(tx_hash)
 }
 
@@ -235,9 +230,8 @@ pub async fn send_reward(
         Compact(amount),
     );
 
-    let extrinsic =
-        crate::sign_call_and_encode(api, balance_transfer_call).await?;
-    let tx_hash = api.author_submit_extrinsic(extrinsic).await?;
+    let tx_hash =
+        crate::sign_and_submit_call(api, balance_transfer_call).await?;
     log::debug!("Sent some coins to with a tx_hash: {:?}", tx_hash);
     Ok(tx_hash)
 }
