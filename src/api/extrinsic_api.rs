@@ -4,9 +4,6 @@ use crate::{
     types::{
         account_info::AccountInfo,
         extrinsic_params::{
-            BaseExtrinsicParams,
-            BaseExtrinsicParamsBuilder,
-            ExtrinsicParams,
             GenericExtra,
             SignedPayload,
         },
@@ -17,6 +14,7 @@ use crate::{
     },
 };
 use codec::Encode;
+use codec::Compact;
 use sp_core::{
     crypto::Pair,
     H256,
@@ -28,6 +26,7 @@ use sp_runtime::{
     MultiSigner,
 };
 use std::fmt;
+use sp_runtime::generic::Era;
 
 impl Api {
     pub fn signer_account<P>(signer: &P) -> AccountId32
@@ -85,42 +84,8 @@ impl Api {
         UncheckedExtrinsicV4::new_unsigned(call)
     }
 
-    pub async fn sign_extrinsic<P, Call>(
-        &self,
-        signer: P,
-        call: Call,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        let xt = self.sign_extrinsic_with_extra(signer, call, None).await?;
-        Ok(xt)
-    }
 
-    pub async fn sign_extrinsic_with_extra<P, Call>(
-        &self,
-        signer: P,
-        call: Call,
-        extra: Option<GenericExtra>,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        let nonce = self.get_nonce(&signer).await?;
-        let extra: GenericExtra = extra
-            .unwrap_or(GenericExtra::immortal_with_nonce_and_tip(nonce, 0));
-        Ok(self
-            .sign_extrinsic_with_extra_and_hash(signer, call, extra, None)
-            .await?)
-    }
-
-    pub fn compose_payload_with_extra<Call>(
+    pub fn compose_payload<Call>(
         &self,
         call: Call,
         extra: GenericExtra,
@@ -145,183 +110,6 @@ impl Api {
         Ok(raw_payload)
     }
 
-    pub fn sign_payload<P, Call>(
-        signer: P,
-        raw_payload: SignedPayload<Call>,
-    ) -> Result<MultiSignature, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        let signature: P::Signature = raw_payload
-            .using_encoded(|payload| Self::sign_message(&signer, payload));
-        let multi_signature = MultiSignature::from(signature);
-        Ok(multi_signature)
-    }
-
-    pub fn derive_signer_address<P>(signer: &P) -> GenericAddress
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-    {
-        let signer_account = Self::signer_account(signer);
-        GenericAddress::from(signer_account)
-    }
-
-    pub async fn sign_extrinsic_with_extra_and_hash<P, Call>(
-        &self,
-        signer: P,
-        call: Call,
-        extra: GenericExtra,
-        head_hash: Option<H256>,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        let raw_payload: SignedPayload<Call> = self
-            .compose_payload_with_extra(
-                call.clone(),
-                extra.clone(),
-                head_hash,
-            )?;
-
-        let signer_address = Self::derive_signer_address(&signer);
-        let multi_signature = Self::sign_payload(signer, raw_payload)?;
-
-        Ok(UncheckedExtrinsicV4::new_signed(
-            call,
-            signer_address,
-            multi_signature,
-            extra,
-        ))
-    }
-
-    pub async fn sign_extrinsic_with_params_and_hash<P, Params, Tip, Call>(
-        &self,
-        signer: P,
-        call: Call,
-        extrinsic_params: Option<Params::OtherParams>,
-        head_hash: Option<H256>,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
-        u128: From<Tip>,
-        Tip: Encode + Default,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        let nonce = self.get_nonce(&signer).await?;
-        println!("nonce: {}", nonce);
-        let extra = Self::convert_to_generic_extra::<Params, Tip>(
-            nonce,
-            extrinsic_params,
-        );
-        let xt = self
-            .sign_extrinsic_with_extra_and_hash(signer, call, extra, head_hash)
-            .await?;
-        Ok(xt)
-    }
-
-    pub async fn sign_extrinsic_with_params<P, Params, Tip, Call>(
-        &self,
-        signer: P,
-        call: Call,
-        extrinsic_params: Option<Params::OtherParams>,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
-        u128: From<Tip>,
-        Tip: Encode + Default,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        let nonce = self.get_nonce(&signer).await?;
-        println!("nonce: {}", nonce);
-        let extra = Self::convert_to_generic_extra::<Params, Tip>(
-            nonce,
-            extrinsic_params,
-        );
-        let xt = self
-            .sign_extrinsic_with_extra(signer, call, Some(extra))
-            .await?;
-        Ok(xt)
-    }
-
-    /// create an UncheckedExtrisic<Call>
-    /// This is a simplified version of compose_extrinsic_with_params
-    /// but has less generics to deal with
-    pub async fn compose_extrinsics<P, Call>(
-        &self,
-        signer: Option<P>,
-        call: Call,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        match signer {
-            None => Ok(self.unsigned_extrinsic(call)),
-            Some(signer) => Ok(self.sign_extrinsic(signer, call).await?),
-        }
-    }
-
-    fn convert_to_generic_extra<Params, Tip>(
-        nonce: u32,
-        extrinsic_params: Option<Params::OtherParams>,
-    ) -> GenericExtra
-    where
-        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
-        u128: From<Tip>,
-        Tip: Encode + Default,
-    {
-        let other_params: BaseExtrinsicParamsBuilder<Tip> =
-            extrinsic_params.unwrap_or_default();
-        let params: BaseExtrinsicParams<Tip> =
-            BaseExtrinsicParams::new(nonce, other_params);
-        let extra: GenericExtra = GenericExtra::from(params);
-        extra
-    }
-
-    /// create an UncheckedExtrinsic from call with an optional signer
-    pub async fn compose_extrinsic_with_params<P, Params, Tip, Call>(
-        &self,
-        signer: Option<P>,
-        call: Call,
-        extrinsic_params: Option<Params::OtherParams>,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
-    where
-        P: Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
-        u128: From<Tip>,
-        Tip: Encode + Default,
-        Call: Encode + Clone + fmt::Debug,
-    {
-        match signer {
-            None => Ok(self.unsigned_extrinsic(call)),
-            Some(signer) => {
-                Ok(self
-                    .sign_extrinsic_with_params::<P, Params, Tip, Call>(
-                        signer,
-                        call,
-                        extrinsic_params,
-                    )
-                    .await?)
-            }
-        }
-    }
 
     /// sign a bytes with the specified signer
     /// TODO: This should call an external API for the runtime
@@ -333,47 +121,7 @@ impl Api {
         signer.sign(payload)
     }
 
-    /// A simplified version of sign_and_submit_extrisic_with_params
-    /// with less Generic parameters to deal with
-    pub async fn sign_and_submit_extrinsic<P, Call>(
-        &self,
-        signer: P,
-        call: Call,
-    ) -> Result<Option<H256>, Error>
-    where
-        P: sp_core::crypto::Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Call: Clone + fmt::Debug + Encode,
-    {
-        let xt = self.sign_extrinsic::<P, Call>(signer, call).await?;
-        Ok(self.submit_extrinsic(xt).await?)
-    }
 
-    pub async fn sign_and_submit_extrinsic_with_params<P, Params, Tip, Call>(
-        &self,
-        signer: P,
-        call: Call,
-        extrinsic_params: Option<Params::OtherParams>,
-    ) -> Result<Option<H256>, Error>
-    where
-        P: sp_core::crypto::Pair,
-        MultiSigner: From<P::Public>,
-        MultiSignature: From<P::Signature>,
-        Params: ExtrinsicParams<OtherParams = BaseExtrinsicParamsBuilder<Tip>>,
-        u128: From<Tip>,
-        Tip: Encode + Default,
-        Call: Clone + fmt::Debug + Encode,
-    {
-        let xt = self
-            .sign_extrinsic_with_params::<P, Params, Tip, Call>(
-                signer,
-                call,
-                extrinsic_params,
-            )
-            .await?;
-        Ok(self.submit_extrinsic(xt).await?)
-    }
 
     /// submit the extrinsic into the node
     pub async fn submit_extrinsic<Call>(
@@ -387,32 +135,62 @@ impl Api {
         Ok(self.author_submit_extrinsic(encoded).await?)
     }
 
-    /// a simpler version of signing a call, with no tip, no perio, no head_hash
-    pub async fn sign_call_with_message_signer<Call, SignFn, R>(
-        &self,
-        signer_account: AccountId32,
-        signing_function: SignFn,
+    /// if Era uses some period and block number, the head_hash must be the head_has of the
+    /// block_number used in the era
+    pub async fn compose_payload_and_extra<Call>(&self,
+        signer_account: &AccountId32,
         call: Call,
-    ) -> Result<UncheckedExtrinsicV4<Call>, Error>
+        era: Option<Era>,
+        head_hash: Option<H256>,
+        tip: Option<u128>,
+        )-> Result<(SignedPayload<Call>, GenericExtra), Error>
     where
-        Call: Encode + Clone + fmt::Debug,
-        SignFn: Fn(&[u8]) -> R,
-        MultiSignature: From<R>,
+        Call: Clone + fmt::Debug + Encode,
     {
-        let nonce = self.get_nonce_for_account(&signer_account).await?;
-        let signer_address = GenericAddress::from(signer_account);
-        let extra = GenericExtra::immortal_with_nonce_and_tip(nonce, 0);
+
+        let nonce = self.get_nonce_for_account(signer_account).await?;
+        let tip = tip.unwrap_or(0);
+        let era = era.unwrap_or(Era::immortal());
+        let extra = GenericExtra(era, Compact(nonce), Compact(tip));
+
         let raw_payload: SignedPayload<Call> =
-            self.compose_payload_with_extra(call.clone(), extra.clone(), None)?;
+            self.compose_payload(call.clone(), extra.clone(), head_hash)?;
 
-        let signature = raw_payload.using_encoded(signing_function);
-        let multi_signature = MultiSignature::from(signature);
-
-        Ok(UncheckedExtrinsicV4::new_signed(
-            call,
-            signer_address,
-            multi_signature,
-            extra,
-        ))
+        Ok((raw_payload,extra))
     }
+
+    pub async fn sign_extrinsic_with_era<P, Call>(&self, signer: &P, call: Call, era: Option<Era>, head_hash: Option<H256>, tip: Option<u128>) -> Result<UncheckedExtrinsicV4<Call>, Error>
+        where
+        P: sp_core::crypto::Pair,
+        AccountId32: From<P::Public>,
+        MultiSigner: From<P::Public>,
+        MultiSignature: From<P::Signature>,
+        Call: Clone + fmt::Debug + Encode,
+    {
+
+        let signer_account = AccountId32::from(signer.public());
+        let (payload, extra) = self.compose_payload_and_extra(&signer_account, call.clone(), era, head_hash,  tip).await?;
+        let signature = payload.using_encoded(|payload|signer.sign(payload));
+        let multi_signature = MultiSignature::from(signature);
+        let extrinsic = UncheckedExtrinsicV4::new_signed(call, GenericAddress::from(signer_account), multi_signature, extra);
+        Ok(extrinsic)
+    }
+
+    pub async fn sign_extrinsic<P, Call>(&self, signer: &P, call: Call, tip: Option<u128>) -> Result<UncheckedExtrinsicV4<Call>, Error>
+        where
+        P: sp_core::crypto::Pair,
+        AccountId32: From<P::Public>,
+        MultiSigner: From<P::Public>,
+        MultiSignature: From<P::Signature>,
+        Call: Clone + fmt::Debug + Encode,
+    {
+
+        let signer_account = AccountId32::from(signer.public());
+        let (payload, extra) = self.compose_payload_and_extra(&signer_account, call.clone(), None, None,  tip).await?;
+        let signature = payload.using_encoded(|payload|signer.sign(payload));
+        let multi_signature = MultiSignature::from(signature);
+        let extrinsic = UncheckedExtrinsicV4::new_signed(call, GenericAddress::from(signer_account), multi_signature, extra);
+        Ok(extrinsic)
+    }
+
 }

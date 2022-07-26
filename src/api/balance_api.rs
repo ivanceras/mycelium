@@ -2,11 +2,6 @@
 use crate::{
     error::Error,
     types::{
-        extrinsic_params::{
-            PlainTip,
-            PlainTipExtrinsicParams,
-            PlainTipExtrinsicParamsBuilder,
-        },
         extrinsics::GenericAddress,
     },
     Api,
@@ -20,10 +15,10 @@ use sp_core::{
     H256,
 };
 use sp_runtime::{
-    generic::Era,
     MultiSignature,
     MultiSigner,
 };
+use crate::types::extrinsics::UncheckedExtrinsicV4;
 
 const BALANCES: &str = "Balances";
 
@@ -39,6 +34,7 @@ impl Api {
     where
         P: Pair,
         MultiSigner: From<P::Public>,
+        AccountId32: From<P::Public>,
         MultiSignature: From<P::Signature>,
     {
         let balance_call_index: [u8; 2] =
@@ -47,28 +43,15 @@ impl Api {
         let balance_call: ([u8; 2], GenericAddress, Compact<u128>) =
             (balance_call_index, GenericAddress::Id(to), Compact(amount));
 
-        if let Some(tip) = tip {
-            let genesis_hash = self.genesis_hash();
 
-            let tx_params = PlainTipExtrinsicParamsBuilder::new()
-                .tip(tip)
-                .era(Era::Immortal, genesis_hash);
+        let signer_account = AccountId32::from(from.public());
+        let (payload, extra) = self.compose_payload_and_extra(&signer_account, balance_call.clone(), None, None, tip).await?;
+        let signature = payload.using_encoded(|payload|Self::sign_message(&from, payload));
+        let multi_signature = MultiSignature::from(signature);
 
-            let result = self.sign_and_submit_extrinsic_with_params::<P, PlainTipExtrinsicParams, PlainTip,
-            ([u8; 2], GenericAddress, Compact<u128>)>(from, balance_call, Some(tx_params))
-            .await?;
-            Ok(result)
-        } else {
-            //Note: would be exequivalent to calling sign_and_submit_extrisic_with_params and
-            //passing None to the last argument of the function.
-            //This is using the simplified version of test it's usage as well
-            let result = self
-                .sign_and_submit_extrinsic::<P, ([u8; 2], GenericAddress, Compact<u128>)>(
-                    from,
-                    balance_call,
-                )
-                .await?;
-            Ok(result)
-        }
+        let extrinsic = UncheckedExtrinsicV4::new_signed(balance_call, GenericAddress::from(signer_account), multi_signature, extra);
+        let encoded = extrinsic.hex_encode();
+        let tx_hash = self.author_submit_extrinsic(encoded).await?;
+        Ok(tx_hash)
     }
 }
