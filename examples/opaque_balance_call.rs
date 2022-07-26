@@ -4,21 +4,17 @@ use mycelium::{
     Api,
 };
 use node_template_runtime::{
-    BalancesCall,
-    Call,
     Header,
 };
-use sp_core::H256;
 use sp_keyring::AccountKeyring;
 use sp_runtime::{
     generic::Era,
     MultiAddress,
 };
 use sp_runtime::MultiSignature;
-use mycelium::types::extrinsics::UncheckedExtrinsicV4;
 use sp_core::Pair;
-use mycelium::types::extrinsics::GenericAddress;
 use sp_core::crypto::AccountId32;
+use codec::Compact;
 
 #[tokio::main]
 async fn main() -> Result<(), mycelium::Error> {
@@ -27,8 +23,6 @@ async fn main() -> Result<(), mycelium::Error> {
     let to = AccountKeyring::Bob.to_account_id();
 
     let api = Api::new("http://localhost:9933").await?;
-
-    let genesis_hash: H256 = api.genesis_hash();
 
     let head_hash = api
         .chain_get_finalized_head()
@@ -39,10 +33,8 @@ async fn main() -> Result<(), mycelium::Error> {
         .await?
         .expect("must have a header");
 
-    let call: Call = Call::Balances(BalancesCall::transfer {
-        dest: MultiAddress::Id(to),
-        value: 69_420,
-    });
+    let call_index = api.pallet_call_index("Balances", "transfer")?;
+    let call:([u8;2], MultiAddress::<AccountId32, ()>, Compact<u128>) = (call_index, MultiAddress::<AccountId32, ()>::Id(to), Compact(69_420));
 
 
     let period = 5;
@@ -50,14 +42,14 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let signer_account = AccountId32::from(from.public());
 
-    let (payload, extra) = api.compose_payload_and_extra(&signer_account, call.clone(), Some(era), Some(head_hash),  Some(10)).await?;
+    let nonce = api.get_nonce_for_account(&signer_account).await?;
 
-    let signature = payload.using_encoded(|payload|from.sign(payload));
+    let (payload, extra) = api.compose_opaque_payload_and_extra(nonce, call.clone(), Some(era), Some(head_hash),  Some(10)).await?;
+
+    let signature: sp_core::sr25519::Signature = from.sign(&payload);
     let multi_signature = MultiSignature::from(signature);
 
-    let xt = UncheckedExtrinsicV4::new_signed(call, GenericAddress::from(signer_account), multi_signature, extra);
-    let encoded = xt.hex_encode();
-    let tx = api.author_submit_extrinsic(encoded).await?;
+    let tx = api.submit_signed_call(call, &signer_account, multi_signature, extra).await?;
     println!("tx: {:?}", tx);
     Ok(())
 }
