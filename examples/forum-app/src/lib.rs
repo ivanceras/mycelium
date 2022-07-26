@@ -6,7 +6,6 @@ use mycelium::{
     sp_core,
     sp_core::{
         crypto::AccountId32,
-        Pair,
     },
     Api,
 };
@@ -500,11 +499,8 @@ where
 {
     // we use alice for now, for simplicity
     let signer: sp_core::sr25519::Pair = AccountKeyring::Alice.pair();
-    let signer_account = Api::signer_account(&signer);
-
-    let sign_fn = |payload: &[u8]| signer.sign(payload);
     let extrinsic = api
-        .sign_call_with_message_signer(signer_account, sign_fn, call)
+        .sign_extrinsic(&signer, call, None)
         .await?;
     let encoded = extrinsic.hex_encode();
     Ok(encoded)

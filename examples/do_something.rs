@@ -20,7 +20,7 @@ async fn main() -> Result<(), mycelium::Error> {
         .expect("function name does not exist");
     let call: ([u8; 2], u32) = ([pallet.index, *call_index], value);
 
-    let extrinsic = api.sign_extrinsic(signer, call).await?;
+    let extrinsic = api.sign_extrinsic(&signer, call, None).await?;
 
     let result = api.submit_extrinsic(extrinsic).await?;
     println!("result: {:?}", result);

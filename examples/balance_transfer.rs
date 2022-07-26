@@ -1,17 +1,8 @@
 //! This example transfer some amount from Alice to Charlie
-#![allow(warnings)]
-use codec::Compact;
+#![deny(warnings)]
 use mycelium::{
     sp_core::crypto::AccountId32,
-    types::{
-        extrinsic_params::{
-            PlainTip,
-            PlainTipExtrinsicParams,
-        },
-        extrinsics::GenericAddress,
-    },
     Api,
-    Metadata,
 };
 use sp_core::Pair;
 use sp_keyring::AccountKeyring;

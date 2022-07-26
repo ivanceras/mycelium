@@ -210,7 +210,7 @@ async fn add_post(
 
     let current_item = get_current_item(api).await?;
 
-    let extrinsic = api.sign_extrinsic(author.clone(), call).await?;
+    let extrinsic = api.sign_extrinsic(author, call, None).await?;
     let result = api.submit_extrinsic(extrinsic).await?;
     println!("result: {:?}", result);
 
@@ -251,7 +251,7 @@ async fn add_comment_to(
 
     let current_item = get_current_item(api).await?;
 
-    let extrinsic = api.sign_extrinsic(author.clone(), call).await?;
+    let extrinsic = api.sign_extrinsic(author, call, None).await?;
     let result = api.submit_extrinsic(extrinsic).await?;
     println!("comment result: {:?}", result);
 

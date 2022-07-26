@@ -1,6 +1,6 @@
 //! Calling function from a custom pallet and using types that are redefinition to disconnect from
 //! encoding
-#![allow(warnings)]
+#![deny(warnings)]
 use async_recursion::async_recursion;
 use codec::{
     Decode,
@@ -12,10 +12,6 @@ use frame_support::{
 };
 use mycelium::{
     sp_core::crypto::AccountId32,
-    types::extrinsic_params::{
-        PlainTip,
-        PlainTipExtrinsicParams,
-    },
     Api,
 };
 use sp_core::sr25519::Pair;
@@ -93,7 +89,7 @@ async fn main() -> Result<(), mycelium::Error> {
 
     sleep(DELAY);
 
-    let item1 = add_comment_to(
+    let _item1 = add_comment_to(
         &api,
         last_post_id,
         "This is a comment to Hello world!",
@@ -103,20 +99,20 @@ async fn main() -> Result<(), mycelium::Error> {
 
     sleep(DELAY);
 
-    let item2 = add_comment_to(
+    let _item2 = add_comment_to(
         &api,
         last_post_id,
         "This is a 2nd comment to the Hello world!",
         &bob,
     )
     .await?;
-    println!("item2: {}", item2);
+    println!("item2: {}", _item2);
 
     sleep(DELAY);
 
-    let item3 = add_comment_to(
+    let _item3 = add_comment_to(
         &api,
-        item2,
+        _item2,
         "This is a comment to the 2nd comment to the Hello world post!",
         &alice,
     )
@@ -175,7 +171,7 @@ async fn add_post(
 
     let current_item = get_current_item(api).await?;
 
-    let extrinsic = api.sign_extrinsic(author.clone(), call).await?;
+    let extrinsic = api.sign_extrinsic(author, call, None).await?;
     let result = api.submit_extrinsic(extrinsic).await?;
     println!("result: {:?}", result);
     Ok(current_item)
@@ -214,7 +210,7 @@ async fn add_comment_to(
 
     let current_item = get_current_item(api).await?;
 
-    let extrinsic = api.sign_extrinsic(author.clone(), call).await?;
+    let extrinsic = api.sign_extrinsic(author, call, None).await?;
     let result = api.submit_extrinsic(extrinsic).await?;
     println!("comment result: {:?}", result);
     Ok(current_item)

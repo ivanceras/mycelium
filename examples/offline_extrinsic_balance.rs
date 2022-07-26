@@ -1,11 +1,6 @@
 //! An example using an offline extrinsic, using the types of the instantiated chain
 #![deny(warnings)]
 use mycelium::{
-    types::extrinsic_params::{
-        PlainTip,
-        PlainTipExtrinsicParams,
-        PlainTipExtrinsicParamsBuilder,
-    },
     Api,
 };
 use node_template_runtime::{
@@ -13,7 +8,6 @@ use node_template_runtime::{
     Call,
     Header,
 };
-use sp_core::H256;
 use sp_keyring::AccountKeyring;
 use sp_runtime::{
     generic::Era,
@@ -28,7 +22,6 @@ async fn main() -> Result<(), mycelium::Error> {
 
     let api = Api::new("http://localhost:9933").await?;
 
-    let genesis_hash: H256 = api.genesis_hash();
 
     let head_hash = api
         .chain_get_finalized_head()
@@ -39,21 +32,21 @@ async fn main() -> Result<(), mycelium::Error> {
         .await?
         .expect("must have a header");
     let period = 5;
-    let tx_params = PlainTipExtrinsicParamsBuilder::new()
-        .era(Era::mortal(period, header.number.into()), genesis_hash)
-        .tip(10);
 
     let call: Call = Call::Balances(BalancesCall::transfer {
         dest: MultiAddress::Id(to),
         value: 69_420,
     });
 
+let era = Era::mortal(period, header.number.into());
+
     let xt = api
-        .sign_extrinsic_with_params_and_hash::<sp_core::sr25519::Pair, PlainTipExtrinsicParams, PlainTip, Call>(
-            from,
+        .sign_extrinsic_with_era(
+            &from,
             call,
-            Some(tx_params),
+            Some(era),
             Some(head_hash),
+            Some(10),
         )
         .await?;
 

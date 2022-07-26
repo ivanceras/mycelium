@@ -1,13 +1,9 @@
 //! Do a sudoer function Balance::set_balance
 //! This is using Alice as the sudo user then set the balance amount to Bob
-#![allow(warnings)]
+#![deny(warnings)]
 use codec::Compact;
 use mycelium::{
     types::{
-        extrinsic_params::{
-            PlainTip,
-            PlainTipExtrinsicParams,
-        },
         extrinsics::GenericAddress,
     },
     Api,
@@ -50,7 +46,7 @@ async fn main() -> Result<(), mycelium::Error> {
         ([u8; 2], GenericAddress, Compact<u128>, Compact<u128>),
     ) = ([sudo_pallet.index, *sudo_call_index as u8], balance_call);
 
-    let xt = api.sign_extrinsic(sudoer, sudo_call).await?;
+    let xt = api.sign_extrinsic(&sudoer, sudo_call, None).await?;
 
     let result = api.submit_extrinsic(xt).await?;
     println!("result: {:?}", result);

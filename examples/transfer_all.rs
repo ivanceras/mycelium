@@ -31,7 +31,7 @@ async fn main() -> Result<(), mycelium::Error> {
         true,
     );
 
-    let xt = api.sign_extrinsic(from, balance_call).await?;
+    let xt = api.sign_extrinsic(&from, balance_call, None).await?;
 
     let result = api.submit_extrinsic(xt).await?;
     println!("result: {:?}", result);
