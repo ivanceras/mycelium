@@ -111,6 +111,7 @@ impl Api {
     }
 
 
+
     /// sign a bytes with the specified signer
     /// TODO: This should call an external API for the runtime
     /// otherwise, this api acts as if it is a wallet
@@ -184,13 +185,7 @@ impl Api {
         MultiSignature: From<P::Signature>,
         Call: Clone + fmt::Debug + Encode,
     {
-
-        let signer_account = AccountId32::from(signer.public());
-        let (payload, extra) = self.compose_payload_and_extra(&signer_account, call.clone(), None, None,  tip).await?;
-        let signature = payload.using_encoded(|payload|signer.sign(payload));
-        let multi_signature = MultiSignature::from(signature);
-        let extrinsic = UncheckedExtrinsicV4::new_signed(call, GenericAddress::from(signer_account), multi_signature, extra);
-        Ok(extrinsic)
+        self.sign_extrinsic_with_era(signer, call, None, None, tip).await
     }
 
 }

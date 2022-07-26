@@ -18,7 +18,6 @@ use sp_runtime::{
     MultiSignature,
     MultiSigner,
 };
-use crate::types::extrinsics::UncheckedExtrinsicV4;
 
 const BALANCES: &str = "Balances";
 
@@ -44,12 +43,8 @@ impl Api {
             (balance_call_index, GenericAddress::Id(to), Compact(amount));
 
 
-        let signer_account = AccountId32::from(from.public());
-        let (payload, extra) = self.compose_payload_and_extra(&signer_account, balance_call.clone(), None, None, tip).await?;
-        let signature = payload.using_encoded(|payload|Self::sign_message(&from, payload));
-        let multi_signature = MultiSignature::from(signature);
 
-        let extrinsic = UncheckedExtrinsicV4::new_signed(balance_call, GenericAddress::from(signer_account), multi_signature, extra);
+        let extrinsic = self.sign_extrinsic(&from, balance_call, tip).await?;
         let encoded = extrinsic.hex_encode();
         let tx_hash = self.author_submit_extrinsic(encoded).await?;
         Ok(tx_hash)
