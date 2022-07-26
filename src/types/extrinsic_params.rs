@@ -1,12 +1,5 @@
-use codec::{
-    Compact,
-    Decode,
-    Encode,
-};
-use sp_core::{
-    blake2_256,
-    H256,
-};
+use codec::{Compact, Decode, Encode};
+use sp_core::{blake2_256, H256};
 use sp_runtime::generic::Era;
 use sp_std::prelude::*;
 
@@ -143,7 +136,7 @@ impl<Tip: Encode> ExtrinsicParams for BaseExtrinsicParams<Tip> {
 pub type AdditionalSigned = (u32, u32, H256, H256, (), (), ());
 
 #[derive(Decode, Encode, Clone, Eq, PartialEq, Debug)]
-pub struct SignedPayload<Call>((Call, GenericExtra, AdditionalSigned));
+pub struct SignedPayload<Call>(pub (Call, GenericExtra, AdditionalSigned));
 
 impl<Call> SignedPayload<Call>
 where

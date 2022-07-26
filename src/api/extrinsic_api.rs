@@ -14,6 +14,7 @@ use crate::{
     },
 };
 use codec::Encode;
+use codec::Decode;
 use codec::Compact;
 use sp_core::{
     crypto::Pair,
@@ -139,7 +140,7 @@ impl Api {
     /// if Era uses some period and block number, the head_hash must be the head_has of the
     /// block_number used in the era
     pub async fn compose_payload_and_extra<Call>(&self,
-        signer_account: &AccountId32,
+        nonce: u32,
         call: Call,
         era: Option<Era>,
         head_hash: Option<H256>,
@@ -149,7 +150,6 @@ impl Api {
         Call: Clone + fmt::Debug + Encode,
     {
 
-        let nonce = self.get_nonce_for_account(signer_account).await?;
         let tip = tip.unwrap_or(0);
         let era = era.unwrap_or(Era::immortal());
         let extra = GenericExtra(era, Compact(nonce), Compact(tip));
@@ -159,6 +159,8 @@ impl Api {
 
         Ok((raw_payload,extra))
     }
+
+
 
     pub async fn sign_extrinsic_with_era<P, Call>(&self, signer: &P, call: Call, era: Option<Era>, head_hash: Option<H256>, tip: Option<u128>) -> Result<UncheckedExtrinsicV4<Call>, Error>
         where
@@ -170,9 +172,13 @@ impl Api {
     {
 
         let signer_account = AccountId32::from(signer.public());
-        let (payload, extra) = self.compose_payload_and_extra(&signer_account, call.clone(), era, head_hash,  tip).await?;
+        let nonce = self.get_nonce_for_account(&signer_account).await?;
+        let (payload, extra) = self.compose_payload_and_extra(nonce, call.clone(), era, head_hash,  tip).await?;
+
+
         let signature = payload.using_encoded(|payload|signer.sign(payload));
         let multi_signature = MultiSignature::from(signature);
+
         let extrinsic = UncheckedExtrinsicV4::new_signed(call, GenericAddress::from(signer_account), multi_signature, extra);
         Ok(extrinsic)
     }
@@ -187,5 +193,32 @@ impl Api {
     {
         self.sign_extrinsic_with_era(signer, call, None, None, tip).await
     }
+
+    /// create a payload ready for signing and the extra in opaque bytes
+    pub async fn compose_opaque_payload_and_extra<Call>(&self, nonce: u32, call:Call, era: Option<Era>, head_hash: Option<H256>, tip: Option<u128>) -> Result<(Vec<u8>, Vec<u8>), Error>
+        where Call: Clone + fmt::Debug + Encode
+    {
+        let (payload, extra) = self.compose_payload_and_extra(nonce, call, era, head_hash, tip).await?;
+        let payload_encoded = payload.encode();
+        let payload_for_signing  = if payload_encoded.len() > 256 {
+            sp_core::blake2_256(&payload_encoded).to_vec()
+        }else{
+            payload_encoded
+        };
+        Ok((payload_for_signing,extra.encode()))
+    }
+
+    /// submit the signed call with signature and extra
+    pub async fn submit_signed_call<Call>(&self, call: Call, signer_account: &AccountId32, multi_signature: MultiSignature, extra: Vec<u8>) -> Result<Option<H256>, Error>
+        where Call: Clone + fmt::Debug + Encode
+    {
+
+        let extra = GenericExtra::decode(&mut extra.as_slice())?;
+        let extrinsic = UncheckedExtrinsicV4::new_signed(call, GenericAddress::from(signer_account.clone()), multi_signature, extra);
+        let encoded = extrinsic.hex_encode();
+        let tx_hash = self.author_submit_extrinsic(encoded).await?;
+        Ok(tx_hash)
+    }
+
 
 }
