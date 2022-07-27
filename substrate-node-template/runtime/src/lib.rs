@@ -6,6 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_contracts::DefaultContractAccessWeight;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -275,6 +276,72 @@ impl pallet_forum::Config for Runtime {
 	type MaxComments = ConstU32<1000>;
 }
 
+impl pallet_nicks::Config for Runtime {
+	// The Balances pallet implements the ReservableCurrency trait.
+	// `Balances` is defined in `construct_runtime!` macro.
+	type Currency = Balances;
+
+	// Set ReservationFee to a value.
+	type ReservationFee = ConstU128<100>;
+
+	// No action is taken when deposits are forfeited.
+	type Slashed = ();
+
+	// Configure the FRAME System Root origin as the Nick pallet admin.
+	// https://paritytech.github.io/substrate/master/frame_system/enum.RawOrigin.html#variant.Root
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+
+	// Set MinLength of nick name to a desired value.
+	type MinLength = ConstU32<8>;
+
+	// Set MaxLength of nick name to a desired value.
+	type MaxLength = ConstU32<32>;
+
+	// The ubiquitous event type.
+	type Event = Event;
+}
+
+// Contracts price units.
+pub const MILLICENTS: Balance = 1_000_000_000;
+pub const CENTS: Balance = 1_000 * MILLICENTS;
+pub const DOLLARS: Balance = 100 * CENTS;
+
+const fn deposit(items: u32, bytes: u32) -> Balance {
+	items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+}
+const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
+const CONTRACTS_DEBUG_OUTPUT: bool = true;
+
+parameter_types! {
+  pub const DepositPerItem: Balance = deposit(1, 0);
+  pub const DepositPerByte: Balance = deposit(0, 1);
+  pub const DeletionQueueDepth: u32 = 128;
+  pub DeletionWeightLimit: Weight = AVERAGE_ON_INITIALIZE_RATIO * BlockWeights::get().max_block;
+  pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
+}
+
+impl pallet_contracts::Config for Runtime {
+	type Time = Timestamp;
+	type Randomness = RandomnessCollectiveFlip;
+	type Currency = Balances;
+	type Event = Event;
+	type Call = Call;
+	type CallFilter = frame_support::traits::Nothing;
+	type WeightPrice = pallet_transaction_payment::Pallet<Self>;
+	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
+	type ChainExtension = ();
+	type Schedule = Schedule;
+	type CallStack = [pallet_contracts::Frame<Self>; 31];
+	type DeletionQueueDepth = DeletionQueueDepth;
+	type DeletionWeightLimit = DeletionWeightLimit;
+	type DepositPerByte = DepositPerByte;
+	type DepositPerItem = DepositPerItem;
+	type AddressGenerator = pallet_contracts::DefaultAddressGenerator;
+	type ContractAccessWeight = DefaultContractAccessWeight<BlockWeights>;
+	type MaxCodeLen = ConstU32<{ 256 * 1024 }>;
+	type RelaxedMaxCodeLen = ConstU32<{ 512 * 1024 }>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -293,6 +360,8 @@ construct_runtime!(
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
 		ForumModule: pallet_forum,
+		Nicks: pallet_nicks,
+		Contracts: pallet_contracts,
 	}
 );
 
@@ -472,6 +541,48 @@ impl_runtime_apis! {
 		}
 	}
 
+impl pallet_contracts_rpc_runtime_api::ContractsApi<Block, AccountId, Balance, BlockNumber, Hash>
+ for Runtime
+ {
+  fn call(
+	 origin: AccountId,
+	 dest: AccountId,
+	 value: Balance,
+	 gas_limit: u64,
+	 storage_deposit_limit: Option<Balance>,
+	 input_data: Vec<u8>,
+  ) -> pallet_contracts_primitives::ContractExecResult<Balance> {
+	 Contracts::bare_call(origin, dest, value, gas_limit, storage_deposit_limit, input_data, CONTRACTS_DEBUG_OUTPUT)
+  }
+
+  fn instantiate(
+	 origin: AccountId,
+	 value: Balance,
+	 gas_limit: u64,
+	 storage_deposit_limit: Option<Balance>,
+	 code: pallet_contracts_primitives::Code<Hash>,
+	 data: Vec<u8>,
+	 salt: Vec<u8>,
+  ) -> pallet_contracts_primitives::ContractInstantiateResult<AccountId, Balance> {
+	 Contracts::bare_instantiate(origin, value, gas_limit, storage_deposit_limit, code, data, salt, CONTRACTS_DEBUG_OUTPUT)
+	 }
+
+  fn upload_code(
+	 origin: AccountId,
+	 code: Vec<u8>,
+	 storage_deposit_limit: Option<Balance>,
+  ) -> pallet_contracts_primitives::CodeUploadResult<Hash, Balance> {
+	 Contracts::bare_upload_code(origin, code, storage_deposit_limit)
+  }
+
+  fn get_storage(
+	 address: AccountId,
+	 key: [u8; 32],
+	 ) -> pallet_contracts_primitives::GetStorageResult {
+	 Contracts::get_storage(address, key)
+	 }
+  }
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
@@ -537,4 +648,6 @@ impl_runtime_apis! {
 			Executive::execute_block_no_check(block)
 		}
 	}
+
+
 }
