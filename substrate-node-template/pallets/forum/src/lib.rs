@@ -95,24 +95,7 @@ pub mod pallet {
 			// Check that the extrinsic was signed and get the signer.
 			// This function will return an error if the extrinsic is not signed.
 			let who = ensure_signed(origin)?;
-
-			// use the total number of items as post_id
-			let post_id = ItemCounter::<T>::get();
-
-			let post = Post {
-				post_id,
-				content: content.clone(),
-				timestamp: Self::timestamp(),
-				author: who.clone(),
-				block_number: Self::block_number(),
-			};
-
-			AllPosts::<T>::insert(post_id, post);
-			// increment the item counter
-			Self::increment_item_counter();
-			// Emit a PostSubmitted event
-			Self::deposit_event(Event::PostSubmitted(post_id, who, content));
-
+			Self::add_post(who, content)?;
 			Ok(())
 		}
 
@@ -141,6 +124,29 @@ pub mod pallet {
 			ItemCounter::<T>::mutate(|i| {
 				*i = i.saturating_add(1);
 			});
+		}
+
+		pub fn add_post(
+			who: T::AccountId,
+			content: BoundedVec<u8, T::MaxContentLength>,
+		) -> DispatchResult {
+			// use the total number of items as post_id
+			let post_id = ItemCounter::<T>::get();
+
+			let post = Post {
+				post_id,
+				content: content.clone(),
+				timestamp: Self::timestamp(),
+				author: who.clone(),
+				block_number: Self::block_number(),
+			};
+
+			AllPosts::<T>::insert(post_id, post);
+			// increment the item counter
+			Self::increment_item_counter();
+			// Emit a PostSubmitted event
+			Self::deposit_event(Event::PostSubmitted(post_id, who, content));
+			Ok(())
 		}
 
 		pub fn add_comment_to(
